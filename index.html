@@ -527,13 +527,51 @@ function buildTest(cfg){
   if(cids.length){html+=`<div class="part">חלק ${PART[part++]||''} – נושאים נוספים</div>`;
     cids.forEach(id=>{const label=(cfg.customLabels&&cfg.customLabels[id])||customLabel(id);const list=cfg.customQs&&cfg.customQs[id];
       if(!list){html+=`<div class="q ph"><div class="n">•</div><div class="b"><div class="tag">${esc(label)}</div><p>השאלות בנושא הזה ייכתבו כשתלחצו „ג׳נרט מבחן”.</p></div></div>`;return}
-      list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a))})})}
+      list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}${figSvg(x.fig)}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a))})})}
   html+=`<div class="foot">בהצלחה! ❤</div>`;
   if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
   return {html,num,qs};
 }
 const HEBR=/[\u0590-\u05FF]/;
 function customQHtml(t){return String(t).split(/\n+/).filter(l=>l.trim()).map(l=>HEBR.test(l)?`<p>${esc(l)}</p>`:`<p class="expr">${L(esc(l)+(/=\s*$/.test(l)?' '+BL:''))}</p>`).join('')}
+/* draw an AI figure spec with our own code (labels escaped, numbers clamped) */
+function figSvg(f){
+  if(!f||typeof f!=='object'||!Array.isArray(f.items)||!f.items.length)return '';
+  const num=(v,lo,hi)=>{v=Number(v);return isFinite(v)?Math.min(hi,Math.max(lo,v)):lo};
+  const W=num(f.w||10,2,16),H=num(f.h||8,2,12),U=Math.min(340/W,220/H,34),PAD=40;
+  const X=x=>PAD+num(x,-1,W+1)*U,Y=y=>PAD+(H-num(y,-1,H+1))*U;
+  /* place a label away from (x,y) along direction (ux,uy), pushed clear of the line by its own width */
+  const away=(x,y,t,size,dx,dy,base)=>{t=String(t==null?'':t).slice(0,24);const l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,tw=t.length*(size||14)*.56;
+    return lab(x+ux*(base+tw/2*Math.abs(ux)),y+uy*(base+(size||14)*.45*Math.abs(uy)),t,size)};
+  const lab=(x,y,t,size,anchor)=>{t=String(t==null?'':t).slice(0,24);if(!t)return '';const rtl=HEBR.test(t);
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size||14}" font-weight="700" fill="${INK}" text-anchor="${anchor||'middle'}" dominant-baseline="middle" direction="${rtl?'rtl':'ltr'}">${esc(t)}</text>`};
+  const pt=a=>Array.isArray(a)&&a.length>=2?[num(a[0],-1,W+1),num(a[1],-1,H+1)]:null;
+  let g='',body='';
+  if(f.grid){for(let i=0;i<=W;i++)g+=`<line x1="${X(i)}" y1="${Y(0)}" x2="${X(i)}" y2="${Y(H)}" stroke="#D5D5D5" stroke-width="1"/>`;for(let j=0;j<=H;j++)g+=`<line x1="${X(0)}" y1="${Y(j)}" x2="${X(W)}" y2="${Y(j)}" stroke="#D5D5D5" stroke-width="1"/>`}
+  f.items.slice(0,14).forEach(it=>{if(!it||typeof it!=='object')return;
+    if(it.t==='poly'){const P=(Array.isArray(it.p)?it.p:[]).slice(0,12).map(pt).filter(Boolean);if(P.length<2)return;
+      const cx=P.reduce((s,q)=>s+q[0],0)/P.length,cy=P.reduce((s,q)=>s+q[1],0)/P.length;
+      body+=`<polygon points="${P.map(q=>X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)).join(' ')}" fill="${it.fill?'#D9D9D9':'#fff'}" fill-opacity="${f.grid&&!it.fill?0:1}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`;
+      (Array.isArray(it.r)?it.r:[]).forEach(k=>{k=Math.round(Number(k));const v=P[k];if(!v)return;const a=P[(k+P.length-1)%P.length],b=P[(k+1)%P.length];
+        const u=(q)=>{const dx=X(q[0])-X(v[0]),dy=Y(q[1])-Y(v[1]),l=Math.hypot(dx,dy)||1;return [dx/l*11,dy/l*11]};const ua=u(a),ub=u(b),vx=X(v[0]),vy=Y(v[1]);
+        body+=`<path d="M${(vx+ua[0]).toFixed(1)} ${(vy+ua[1]).toFixed(1)}L${(vx+ua[0]+ub[0]).toFixed(1)} ${(vy+ua[1]+ub[1]).toFixed(1)}L${(vx+ub[0]).toFixed(1)} ${(vy+ub[1]).toFixed(1)}" fill="none" stroke="${INK}" stroke-width="1.4"/>`});
+      (Array.isArray(it.s)?it.s:[]).forEach((t,k)=>{if(!t||k>=P.length)return;const a=P[k],b=P[(k+1)%P.length];if(P.length===2&&k>0)return;
+        const mx=(X(a[0])+X(b[0]))/2,my=(Y(a[1])+Y(b[1]))/2;let nx=-(Y(b[1])-Y(a[1])),ny=X(b[0])-X(a[0]);if(nx*(mx-X(cx))+ny*(my-Y(cy))<0){nx=-nx;ny=-ny}body+=away(mx,my,t,13,nx,ny,13)});
+      (Array.isArray(it.v)?it.v:[]).forEach((t,k)=>{const v=P[k];if(!v)return;body+=away(X(v[0]),Y(v[1]),t,15,X(v[0])-X(cx),Y(v[1])-Y(cy),9)});
+      if(it.a&&typeof it.a==='object')Object.keys(it.a).slice(0,12).forEach(k=>{const v=P[Math.round(Number(k))];if(!v)return;const dx=X(cx)-X(v[0]),dy=Y(cy)-Y(v[1]),l=Math.hypot(dx,dy)||1;body+=lab(X(v[0])+dx/l*24,Y(v[1])+dy/l*24,it.a[k],12)});
+    } else if(it.t==='seg'){const a=pt(it.p&&it.p[0]),b=pt(it.p&&it.p[1]);if(!a||!b)return;
+      body+=`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`;
+      if(it.s){const mx=(X(a[0])+X(b[0]))/2,my=(Y(a[1])+Y(b[1]))/2;body+=away(mx,my,it.s,13,Y(b[1])-Y(a[1]),-(X(b[0])-X(a[0])),8)}
+      if(Array.isArray(it.v)){[a,b].forEach((q,k)=>{if(!it.v[k])return;const ox=k?X(b[0])-X(a[0]):X(a[0])-X(b[0]),oy=k?Y(b[1])-Y(a[1]):Y(a[1])-Y(b[1]),l=Math.hypot(ox,oy)||1;body+=lab(X(q[0])+ox/l*13,Y(q[1])+oy/l*13,it.v[k],15)})}
+    } else if(it.t==='circle'){const c=pt(it.c);if(!c)return;const r=num(it.r,0.2,8)*U;
+      body+=`<circle cx="${X(c[0])}" cy="${Y(c[1])}" r="${r.toFixed(1)}" fill="#fff" fill-opacity="${f.grid?0:1}" stroke="${INK}" stroke-width="2.2"/><circle cx="${X(c[0])}" cy="${Y(c[1])}" r="2.5" fill="${INK}"/>`;
+      if(it.s)body+=lab(X(c[0]),Y(c[1])-r-12,it.s,13);
+    } else if(it.t==='pt'){const c=pt(it.p);if(!c)return;body+=`<circle cx="${X(c[0])}" cy="${Y(c[1])}" r="3.5" fill="${INK}"/>`+lab(X(c[0])+12,Y(c[1])-12,it.v,15)}
+  });
+  if(!body)return '';
+  const VW=Math.round(W*U+PAD*2),VH=Math.round(H*U+PAD*2);
+  return `<div class="fig" style="overflow-x:auto"><svg viewBox="0 0 ${VW} ${VH}" width="${VW}" xmlns="http://www.w3.org/2000/svg" font-family="Assistant,Arial,sans-serif">${g}${body}</svg></div>`;
+}
 let customTopics=[];
 const customLabel=id=>{const t=customTopics.find(x=>x.id===id);return t?t.label:'נושא נוסף'};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -663,23 +701,33 @@ async function writeCustomQs(cids,qpt){
 For EACH topic below write exactly ${want} questions, in Hebrew, at Israeli grade-5 level.
 Rules:
 - Israeli school conventions: ":" for division, "×" for multiplication, "−" for minus, fractions as 3/4, mixed numbers as 2 1/4, decimals with a dot.
-- Each question is self-contained text with ONE correct answer. No drawings: if a figure is needed, describe it fully in words.
+- Each question has ONE correct answer.
+- Geometry (shapes, sides, angles, area, perimeter, lines, grids) MUST include a drawing in "fig" (format below). Any other question that a student would expect to see drawn may include one too; otherwise omit "fig".
+- The drawing must agree with the text: same vertex letters, same measurements, roughly true proportions. Never show in the drawing the value the student is asked to find (write "?" there instead).
 - Vary them: some direct exercises, some short word problems; easy to medium difficulty.
 - Do not repeat or closely resemble any question in that topic's "avoid" list.
 - Put each standalone arithmetic expression on its own line.
 - "a" is the final answer followed by a very short solution (at most 15 words), in Hebrew.
-Reply with only JSON: {"topics":[{"id":"<topic id>","questions":[{"q":"...","a":"..."}]}]}
+Drawing format ("fig"), coordinates in grid units, x to the right, y upward, origin at bottom-left:
+{"w":<width 2-16>,"h":<height 2-12>,"grid":<true to draw squared paper, e.g. for area by counting squares>,"items":[
+  {"t":"poly","p":[[x,y],...],"v":["A","B",...],"s":["5 ס״מ",...],"r":[<vertex indices with a right angle>],"a":{"<vertex index>":"40°"},"fill":<true to shade>},
+  {"t":"seg","p":[[x,y],[x,y]],"v":["A","B"],"s":"<label>"},
+  {"t":"circle","c":[x,y],"r":<radius>,"s":"<label>"},
+  {"t":"pt","p":[x,y],"v":"A"}]}
+In "poly", "s"[i] labels the side from point i to point i+1 (use "" for no label). Keep labels short.
+
+Reply with only JSON: {"topics":[{"id":"<topic id>","questions":[{"q":"...","a":"...","fig":{...}}]}]}
 
 Topics:
 ${JSON.stringify(topics)}`,{cache:false});
   const out={};topics.forEach(t=>{const g=gen&&Array.isArray(gen.topics)?gen.topics.find(x=>x&&x.id===t.id):null;
-    out[t.id]=(g&&Array.isArray(g.questions)?g.questions:[]).filter(x=>x&&typeof x.q==='string'&&typeof x.a==='string'&&x.q.trim()).map(x=>({q:x.q.trim(),a:x.a.trim()}))});
-  const items=[];for(const id in out)out[id].forEach((x,i)=>items.push({id,i,q:x.q,a:x.a}));
+    out[t.id]=(g&&Array.isArray(g.questions)?g.questions:[]).filter(x=>x&&typeof x.q==='string'&&typeof x.a==='string'&&x.q.trim()).map(x=>{const o={q:x.q.trim(),a:x.a.trim()};if(x.fig&&typeof x.fig==='object'&&Array.isArray(x.fig.items))o.fig=x.fig;return o})});
+  const items=[];for(const id in out)out[id].forEach((x,i)=>items.push(x.fig?{id,i,q:x.q,a:x.a,fig:x.fig}:{id,i,q:x.q,a:x.a}));
   let okSet=new Set();
   if(items.length){
     const ver=await sample.json(`You are checking the answer key of a grade 5 math test (Israel, Hebrew).
 For each item: first solve the question yourself, independently, without looking at the given answer. Then compare.
-Set ok=true only if the question is clear, fits grade 5, has exactly one correct answer, and the given answer "a" is correct. Otherwise ok=false.
+Set ok=true only if the question is clear, fits grade 5, has exactly one correct answer, and the given answer "a" is correct. If the item has a "fig" (a drawing: points in grid units, y upward; "s"[i] labels the side from point i to point i+1; "r" marks right angles), it must agree with the text and must not give away the answer. Otherwise ok=false.
 Reply with only JSON: {"results":[{"id":"<id>","i":<i>,"ok":true}]} with one entry per item.
 
 Items:
