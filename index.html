@@ -146,6 +146,9 @@ table.t td.l{text-align:right}
 .key li>div{flex:1;min-width:0}
 .key table.t{font-size:13px}
 .key table.t th,.key table.t td{padding:2px 6px;min-width:26px}
+.hintq{margin-top:8px;padding:4px 10px;font-size:13.5px;background:#F3F3F3;border-inline-start:3px solid #9A9A9A}
+.hintq b{margin-inline-end:4px}
+.key li.kt{display:block;padding:10px 0 2px;border-bottom:1.5px solid var(--paper-ink);font-weight:800;font-size:14px}
 .q.ph .b p{color:#666;font-style:italic}
 .foot{margin-top:18px;text-align:center;font-weight:700;font-size:14px}
 @media print{
@@ -508,13 +511,31 @@ const TOPICS=[
  {id:'area',g:2,label:'שטח והיקף',gen:gArea},
  {id:'chart',g:3,label:'עבודה עם דיאגרמות',gen:gChart},
 ];
-const PART=['א׳','ב׳','ג׳','ד׳'];
+const PART=['א׳','ב׳','ג׳','ד׳','ה׳'];
+const HINTS={
+ mult:'כופלים קודם ביחידות, אחר כך בעשרות ומוסיפים 0 בסוף התוצאה, ובסוף מחברים את שתי התוצאות.',
+ distrib:'מפרקים מספר אחד לסכום או להפרש נוח, כופלים כל חלק בנפרד, ואז מחברים או מחסרים.',
+ div:'מתחילים מהספרה השמאלית: כמה פעמים נכנס? כופלים, מחסרים, מורידים את הספרה הבאה. בדיקה: מנה × מחלק + שארית.',
+ addsub:'מיישרים לפי ערך המקום: יחידות מתחת ליחידות. בחיבור זוכרים את ההעברה, ובחיסור פורטים מהמקום השכן.',
+ order:'קודם סוגריים, אחר כך כפל וחילוק לפי הסדר, ובסוף חיבור וחיסור לפי הסדר.',
+ numline:'גודל הקפיצה = ההפרש בין שני המספרים הכתובים, חלקי מספר הקפיצות ביניהם.',
+ divis:'ב-2: ספרת אחדות זוגית. ב-5: אחדות 0 או 5. ב-10: אחדות 0. ב-3 או ב-9: סכום הספרות מתחלק ב-3 או ב-9. ב-6: גם ב-2 וגם ב-3.',
+ fracline:'המכנה = לכמה חלקים שווים מחולק כל שלם. המונה = כמה חלקים עברו מ-0 עד הנקודה.',
+ fracvis:'המכנה = מספר כל החלקים השווים בצורה. המונה = מספר החלקים הצבועים.',
+ fracops:'במכנים שווים מחברים או מחסרים רק את המונים. במכנים שונים מרחיבים קודם למכנה משותף. בסוף מצמצמים.',
+ word:'קוראים פעמיים, מסמנים מה ידוע ומה שואלים, בוחרים פעולה, ובסוף בודקים שהתשובה הגיונית.',
+ lines:'מקבילים לא נפגשים אף פעם. מאונכים נחתכים בזווית ישרה של 90°. צלעות סמוכות יוצאות מאותו קודקוד.',
+ tri:'לפי צלעות: 3 שוות = שווה צלעות, 2 שוות = שווה שוקיים. לפי זוויות: הסכום הוא 180°, זווית של 90° = ישר־זווית, מעל 90° = קהה־זווית.',
+ quad:'ריבוע הוא מלבן מיוחד: יש לו 4 זוויות ישרות וגם 4 צלעות שוות.',
+ area:'שטח מלבן = אורך × רוחב, בסמ״ר. היקף = סכום כל הצלעות, בס״מ. בריבוע: היקף = צלע × 4.',
+ chart:'קוראים את גובה כל עמודה לפי קווי הציר. "בכמה יותר" = חיסור, "בסך הכול" = חיבור.'};
+const hintHtml=t=>t?`<div class="hintq"><b>רמז:</b>${esc(t)}</div>`:'';
 
 /* ---------- build a test from settings ---------- */
 function buildTest(cfg){
   seedRng(cfg.seed);
   const chosen=TOPICS.filter(t=>cfg.topics.includes(t.id));
-  let html='',key=[],num=0,part=0;const seen=new Set(),qs=[];
+  let html='',key=[],keyT=[],num=0,part=0;const seen=new Set(),qs=[];
   const ws=cfg.mode==='ws';
   html+=`<div class="sh-head"><div><h2>${esc(cfg.title||'מבחן במתמטיקה')}</h2><div class="sub">כיתה ה׳${cfg.date?` · תאריך: ${L(esc(cfg.date))}`:''}</div></div>
    <div class="sh-fields"><span>שם: <i></i></span><span>כיתה: <i></i></span>${ws?'':'<span>ציון: <i></i></span>'}</div></div>
@@ -522,14 +543,14 @@ function buildTest(cfg){
   GROUPS.forEach((g,gi)=>{const ts=chosen.filter(t=>t.g===gi);if(!ts.length)return;
     html+=`<div class="part">חלק ${PART[part++]} – ${g}</div>`;
     ts.forEach(t=>{const off=ri(0,11);for(let i=0;i<cfg.qpt;i++){let r=t.gen(i+off),tries=0;while(seen.has(r.q)&&tries++<12)r=t.gen(i+off);seen.add(r.q);qs.push(r.q);num++;
-      html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${t.label}</div>${r.q}</div></div>`;key.push(r.a)}})});
+      html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${t.label}</div>${r.q}${ws?hintHtml(HINTS[t.id]):''}</div></div>`;key.push(r.a);keyT.push(t.label)}})});
   const cids=cfg.topics.filter(id=>id.startsWith('c_'));
   if(cids.length){html+=`<div class="part">חלק ${PART[part++]||''} – נושאים נוספים</div>`;
     cids.forEach(id=>{const label=(cfg.customLabels&&cfg.customLabels[id])||customLabel(id);const list=cfg.customQs&&cfg.customQs[id];
       if(!list){html+=`<div class="q ph"><div class="n">•</div><div class="b"><div class="tag">${esc(label)}</div><p>השאלות בנושא הזה ייכתבו כשתלחצו „ג׳נרט מבחן”.</p></div></div>`;return}
-      list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}${figSvg(x.fig)}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a))})})}
+      list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}${figSvg(x.fig)}${ws&&typeof x.h==='string'?hintHtml(x.h):''}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a));keyT.push(esc(label))})})}
   html+=`<div class="foot">בהצלחה! ❤</div>`;
-  if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
+  if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`${ws&&keyT[i]!==keyT[i-1]?`<li class="kt">${keyT[i]}</li>`:''}<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
   return {html,num,qs};
 }
 const HEBR=/[\u0590-\u05FF]/;
@@ -708,6 +729,7 @@ Rules:
 - Do not repeat or closely resemble any question in that topic's "avoid" list.
 - Put each standalone arithmetic expression on its own line.
 - "a" is the final answer followed by a very short solution (at most 15 words), in Hebrew.
+- "h" is a short Hebrew hint for a child practicing alone (at most 15 words) that points to the method without giving the answer. No parentheses in hints.
 Drawing format ("fig"), coordinates in grid units, x to the right, y upward, origin at bottom-left:
 {"w":<width 2-16>,"h":<height 2-12>,"grid":<true to draw squared paper, e.g. for area by counting squares>,"items":[
   {"t":"poly","p":[[x,y],...],"v":["A","B",...],"s":["5 ס״מ",...],"r":[<vertex indices with a right angle>],"a":{"<vertex index>":"40°"},"fill":<true to shade>},
@@ -716,12 +738,12 @@ Drawing format ("fig"), coordinates in grid units, x to the right, y upward, ori
   {"t":"pt","p":[x,y],"v":"A"}]}
 In "poly", "s"[i] labels the side from point i to point i+1 (use "" for no label). Keep labels short.
 
-Reply with only JSON: {"topics":[{"id":"<topic id>","questions":[{"q":"...","a":"...","fig":{...}}]}]}
+Reply with only JSON: {"topics":[{"id":"<topic id>","questions":[{"q":"...","a":"...","h":"...","fig":{...}}]}]}
 
 Topics:
 ${JSON.stringify(topics)}`,{cache:false});
   const out={};topics.forEach(t=>{const g=gen&&Array.isArray(gen.topics)?gen.topics.find(x=>x&&x.id===t.id):null;
-    out[t.id]=(g&&Array.isArray(g.questions)?g.questions:[]).filter(x=>x&&typeof x.q==='string'&&typeof x.a==='string'&&x.q.trim()).map(x=>{const o={q:x.q.trim(),a:x.a.trim()};if(x.fig&&typeof x.fig==='object'&&Array.isArray(x.fig.items))o.fig=x.fig;return o})});
+    out[t.id]=(g&&Array.isArray(g.questions)?g.questions:[]).filter(x=>x&&typeof x.q==='string'&&typeof x.a==='string'&&x.q.trim()).map(x=>{const o={q:x.q.trim(),a:x.a.trim()};if(typeof x.h==='string'&&x.h.trim())o.h=x.h.trim().slice(0,160);if(x.fig&&typeof x.fig==='object'&&Array.isArray(x.fig.items))o.fig=x.fig;return o})});
   const items=[];for(const id in out)out[id].forEach((x,i)=>items.push(x.fig?{id,i,q:x.q,a:x.a,fig:x.fig}:{id,i,q:x.q,a:x.a}));
   let okSet=new Set();
   if(items.length){
@@ -804,7 +826,7 @@ function paginate(sh,sp){
   const blocks=[...sh.querySelectorAll('.sh-head,.instr,.part,.q,.foot,.key h3,.key li')];
   blocks.forEach((el,i)=>{
     const top0=sh.getBoundingClientRect().top,r=el.getBoundingClientRect();let top=r.top-top0,bot=r.bottom-top0;
-    if(el.classList.contains('part')&&blocks[i+1])bot=blocks[i+1].getBoundingClientRect().bottom-top0;
+    if(el.matches('.part,.kt')&&blocks[i+1])bot=blocks[i+1].getBoundingClientRect().bottom-top0;
     const pos=top%pageH;let gap=0;
     if(el.matches('.key h3')){gap=pos>1?pageH-pos:0}
     else if(bot-top<pageH&&Math.floor(top/pageH)!==Math.floor((bot-1)/pageH))gap=pageH-pos;
