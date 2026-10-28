@@ -63,6 +63,18 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
 .status{font-size:13px;color:var(--muted);min-height:1.2em}
 .status.ok{color:var(--ok)} .status.err{color:var(--accent)}
 .arch{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;resize:vertical;min-height:70px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.filebtn{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer}
+.filebtn input{position:absolute;width:1px;height:1px;opacity:0}
+.filebtn span{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filebtn:focus-within span{outline:2px solid var(--accent);outline-offset:2px}
+.found{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.found .d{font-size:12px;color:var(--muted);margin-inline-start:25px;margin-top:-4px}
+.chk .rm{margin-inline-start:auto;font:inherit;font-size:12px;border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:5px}
+.chk .rm.arm{background:var(--accent);color:var(--accent-ink)}
+.chk.off{opacity:.55}
+.ai-tag{font-size:11px;font-weight:700;color:var(--accent);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-inline-start:6px}
 .arch-note{font-size:12px;color:var(--muted)}
 .arch-empty{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:10px}
 .ai{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
@@ -134,6 +146,7 @@ table.t td.l{text-align:right}
 .key li>div{flex:1;min-width:0}
 .key table.t{font-size:13px}
 .key table.t th,.key table.t td{padding:2px 6px;min-width:26px}
+.q.ph .b p{color:#666;font-style:italic}
 .foot{margin-top:18px;text-align:center;font-weight:700;font-size:14px}
 @media print{
   @page{size:A4;margin:12mm 10mm}
@@ -193,6 +206,15 @@ table.t td.l{text-align:right}
       <div class="card">
         <h2>נושאים</h2>
         <div id="topics"></div>
+      </div>
+
+      <div class="card" id="addCard" hidden>
+        <h2>הוספת נושאים</h2>
+        <p class="hint">הדביקו טקסט או העלו צילום של הודעת המורה. Claude יזהה את הנושאים ויוסיף לרשימה רק את מה שעוד אין בה.</p>
+        <textarea id="addText" rows="3" placeholder="למשל: מספרים עשרוניים, נפח של תיבה"></textarea>
+        <label class="filebtn" id="addImgWrap" hidden><input type="file" id="addImg" accept="image/*"><span id="addImgName">📷 הוספת תמונה</span></label>
+        <button class="btn primary" id="addBtn" type="button">זהה נושאים</button>
+        <div id="addOut"></div>
       </div>
 
       <div class="card">
@@ -501,34 +523,46 @@ function buildTest(cfg){
     html+=`<div class="part">חלק ${PART[part++]} – ${g}</div>`;
     ts.forEach(t=>{const off=ri(0,11);for(let i=0;i<cfg.qpt;i++){let r=t.gen(i+off),tries=0;while(seen.has(r.q)&&tries++<12)r=t.gen(i+off);seen.add(r.q);qs.push(r.q);num++;
       html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${t.label}</div>${r.q}</div></div>`;key.push(r.a)}})});
+  const cids=cfg.topics.filter(id=>id.startsWith('c_'));
+  if(cids.length){html+=`<div class="part">חלק ${PART[part++]||''} – נושאים נוספים</div>`;
+    cids.forEach(id=>{const label=(cfg.customLabels&&cfg.customLabels[id])||customLabel(id);const list=cfg.customQs&&cfg.customQs[id];
+      if(!list){html+=`<div class="q ph"><div class="n">•</div><div class="b"><div class="tag">${esc(label)}</div><p>השאלות בנושא הזה ייכתבו כשתלחצו „ג׳נרט מבחן”.</p></div></div>`;return}
+      list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a))})})}
   html+=`<div class="foot">בהצלחה! ❤</div>`;
   if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
   return {html,num,qs};
 }
+const HEBR=/[\u0590-\u05FF]/;
+function customQHtml(t){return String(t).split(/\n+/).filter(l=>l.trim()).map(l=>HEBR.test(l)?`<p>${esc(l)}</p>`:`<p class="expr">${L(esc(l)+(/=\s*$/.test(l)?' '+BL:''))}</p>`).join('')}
+let customTopics=[];
+const customLabel=id=>{const t=customTopics.find(x=>x.id===id);return t?t.label:'נושא נוסף'};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
 /* ---------- UI state ---------- */
 const $=id=>document.getElementById(id);
-const state={mode:'test',qpt:1,topics:TOPICS.map(t=>t.id),key:true,seed:0,title:'מבחן במתמטיקה',date:'2.11',currentId:null,saved:false};
+const state={mode:'test',qpt:1,topics:TOPICS.map(t=>t.id),key:true,seed:0,title:'מבחן במתמטיקה',date:'2.11',currentId:null,saved:false,customQs:null,customLabels:null};
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
-let archive=[],db=null,downloads=null,mode='local',dbReady=false;
+let archive=[],db=null,downloads=null,mode='local',dbReady=false,sample=null;
 
 function renderTopics(){
-  $('topics').innerHTML=GROUPS.map((g,gi)=>`<div class="tg"><div class="tg-h"><span>${g}</span><button type="button" data-g="${gi}">הכל / כלום</button></div>${TOPICS.filter(t=>t.g===gi).map(t=>`<label class="chk"><input type="checkbox" id="t_${t.id}" value="${t.id}" ${state.topics.includes(t.id)?'checked':''}> ${t.label}</label>`).join('')}</div>`).join('');
+  let h=GROUPS.map((g,gi)=>`<div class="tg"><div class="tg-h"><span>${g}</span><button type="button" data-g="${gi}">הכל / כלום</button></div>${TOPICS.filter(t=>t.g===gi).map(t=>`<label class="chk"><input type="checkbox" id="t_${t.id}" value="${t.id}" ${state.topics.includes(t.id)?'checked':''}> ${t.label}</label>`).join('')}</div>`).join('');
+  if(customTopics.length){const off=!sample;
+    h+=`<div class="tg"><div class="tg-h"><span>נושאים שנוספו</span><button type="button" data-g="c">הכל / כלום</button></div>${customTopics.map(t=>`<label class="chk${off?' off':''}"${t.desc?` title="${esc(t.desc)}"`:''}><input type="checkbox" id="t_${t.id}" value="${t.id}" ${state.topics.includes(t.id)&&!off?'checked':''} ${off?'disabled':''}> ${esc(t.label)}<span class="ai-tag">AI</span><button type="button" class="rm" data-rm="${t.id}" aria-label="הסרת הנושא">✕</button></label>`).join('')}${off?'<div class="hint">כדי לכתוב שאלות לנושאים האלה צריך לפתוח את הדף ב-Claude.</div>':''}</div>`}
+  $('topics').innerHTML=h;
 }
 function readSettings(){
   state.title=$('title').value.trim();state.date=$('date').value.trim();state.key=$('keyChk').checked;
   state.topics=[...document.querySelectorAll('#topics input:checked')].map(x=>x.value);
 }
 function applySettings(c){
-  state.mode=c.mode;state.qpt=c.qpt;state.topics=c.topics.slice();state.key=c.key;state.title=c.title;state.date=c.date;state.seed=c.seed;
+  state.mode=c.mode;state.qpt=c.qpt;state.topics=c.topics.slice();state.key=c.key;state.title=c.title;state.date=c.date;state.seed=c.seed;state.customQs=c.customQs||null;state.customLabels=c.customLabels||null;
   $('title').value=c.title;$('date').value=c.date;$('keyChk').checked=c.key;syncSegs();renderTopics();
 }
 function syncSegs(){
   $('modeTest').setAttribute('aria-pressed',state.mode==='test');$('modeWs').setAttribute('aria-pressed',state.mode==='ws');
   document.querySelectorAll('#qptSeg button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===state.qpt));
 }
-function cfgNow(){return {seed:state.seed,mode:state.mode,qpt:state.qpt,topics:state.topics.slice(),key:state.key,title:state.title,date:state.date}}
+function cfgNow(){const c={seed:state.seed,mode:state.mode,qpt:state.qpt,topics:state.topics.slice(),key:state.key,title:state.title,date:state.date};if(state.customQs){c.customQs=state.customQs;c.customLabels=state.customLabels}return c}
 /* wrap non-Hebrew words inside Hebrew sentences (numbers, ✓) in their own spans, so the PDF keeps the spaces around them */
 function isolateNums(root){
   const HEB=/[\u0590-\u05FF]/,w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
@@ -547,7 +581,7 @@ function render(){
 function fit(){const sc=$('scaler'),sh=$('sheet'),k=Math.min(1,sc.clientWidth/760);sh.style.transform=`scale(${k})`;sc.style.height=(sh.offsetHeight*k)+'px'}
 new ResizeObserver(fit).observe($('scaler'));
 function status(t,cls){const s=$('status');s.textContent=t;s.className='status'+(cls?' '+cls:'')}
-function settingsChanged(){readSettings();state.saved=false;state.currentId=null;render()}
+function settingsChanged(){readSettings();state.saved=false;state.currentId=null;state.customQs=null;state.customLabels=null;render()}
 
 /* ---------- archive ----------
    shared: the page's database (people who can edit the page)
@@ -596,14 +630,118 @@ $('arch').addEventListener('click',async e=>{
 $('genBtn').addEventListener('click',async()=>{
   readSettings();
   if(!state.topics.length){status('בחרו לפחות נושא אחד','err');return}
+  const cids=state.topics.filter(id=>id.startsWith('c_'));
+  if(cids.length&&!sample){status('כדי לכתוב שאלות לנושאים שנוספו צריך לפתוח את הדף ב-Claude.','err');return}
+  $('genBtn').disabled=true;
+  let short=0;state.customQs=null;state.customLabels=null;
+  if(cids.length){
+    status('Claude כותב ובודק שאלות לנושאים שנוספו… זה יכול לקחת עד דקה.');
+    try{const r=await writeCustomQs(cids,state.qpt);state.customQs=r.qs;state.customLabels=r.labels;short=r.short}
+    catch(e){status(sampleErr(e),'err');$('genBtn').disabled=false;return}
+  }
   state.seed=freshSeed();state.saved=false;state.currentId=null;
   const rec=Object.assign(cfgNow(),{createdAt:Date.now()});
-  $('genBtn').disabled=true;
-  try{const r=await archiveAdd(rec);state.currentId=r.id;state.saved=true;status('מבחן חדש נוצר ונשמר בארכיון','ok')}
+  try{const r=await archiveAdd(rec);state.currentId=r.id;state.saved=true;
+    status(short?`המבחן נשמר בארכיון. ${short} שאלות AI נפסלו בבדיקה ולא נכנסו.`:'מבחן חדש נוצר ונשמר בארכיון','ok')}
   catch(err){status('הארכיון המשותף מלא. מחקו מבחנים ישנים ונסו שוב.','err')}
   $('genBtn').disabled=false;
   render();
 });
+/* ---------- AI: questions for added topics ---------- */
+function sampleErr(e){const c=e&&e.code;
+  if(c==='not_granted'||c==='sampling_disabled'||c==='not_declared'||c==='capability_disabled'||c==='capability_removed')return 'אין אישור להשתמש ב-Claude בדף הזה, לכן אי אפשר לכתוב שאלות לנושאים שנוספו.';
+  if(c==='rate_limited')return 'הגעתם למגבלת השימוש ב-Claude. נסו שוב מאוחר יותר.';
+  if(c==='session_expired')return 'צריך להתחבר מחדש ל-Claude ולנסות שוב.';
+  if(c==='image_rejected')return 'התמונה לא נקלטה. נסו תמונה אחרת (JPG או PNG).';
+  if(c==='cancelled')return 'הפעולה בוטלה.';
+  return 'Claude לא החזיר תשובה תקינה. נסו שוב.';}
+async function writeCustomQs(cids,qpt){
+  const prev={};archive.forEach(a=>{if(a.customQs)for(const k in a.customQs)(prev[k]=prev[k]||[]).push(...a.customQs[k].map(x=>x.q))});
+  const topics=cids.map(id=>{const t=customTopics.find(x=>x.id===id)||{label:'נושא נוסף',desc:''};return {id,label:t.label,desc:t.desc||'',avoid:(prev[id]||[]).slice(-24)}});
+  const want=qpt+1;
+  const gen=await sample.json(`You write questions for a Hebrew-language grade 5 (כיתה ה׳) math test in Israel.
+For EACH topic below write exactly ${want} questions, in Hebrew, at Israeli grade-5 level.
+Rules:
+- Israeli school conventions: ":" for division, "×" for multiplication, "−" for minus, fractions as 3/4, mixed numbers as 2 1/4, decimals with a dot.
+- Each question is self-contained text with ONE correct answer. No drawings: if a figure is needed, describe it fully in words.
+- Vary them: some direct exercises, some short word problems; easy to medium difficulty.
+- Do not repeat or closely resemble any question in that topic's "avoid" list.
+- Put each standalone arithmetic expression on its own line.
+- "a" is the final answer followed by a very short solution (at most 15 words), in Hebrew.
+Reply with only JSON: {"topics":[{"id":"<topic id>","questions":[{"q":"...","a":"..."}]}]}
+
+Topics:
+${JSON.stringify(topics)}`,{cache:false});
+  const out={};topics.forEach(t=>{const g=gen&&Array.isArray(gen.topics)?gen.topics.find(x=>x&&x.id===t.id):null;
+    out[t.id]=(g&&Array.isArray(g.questions)?g.questions:[]).filter(x=>x&&typeof x.q==='string'&&typeof x.a==='string'&&x.q.trim()).map(x=>({q:x.q.trim(),a:x.a.trim()}))});
+  const items=[];for(const id in out)out[id].forEach((x,i)=>items.push({id,i,q:x.q,a:x.a}));
+  let okSet=new Set();
+  if(items.length){
+    const ver=await sample.json(`You are checking the answer key of a grade 5 math test (Israel, Hebrew).
+For each item: first solve the question yourself, independently, without looking at the given answer. Then compare.
+Set ok=true only if the question is clear, fits grade 5, has exactly one correct answer, and the given answer "a" is correct. Otherwise ok=false.
+Reply with only JSON: {"results":[{"id":"<id>","i":<i>,"ok":true}]} with one entry per item.
+
+Items:
+${JSON.stringify(items)}`,{cache:false});
+    (ver&&Array.isArray(ver.results)?ver.results:[]).forEach(r=>{if(r&&r.ok===true)okSet.add(r.id+'#'+r.i)});
+  }
+  const qs={},labels={};let short=0;
+  topics.forEach(t=>{qs[t.id]=out[t.id].filter((x,i)=>okSet.has(t.id+'#'+i)).slice(0,qpt);labels[t.id]=t.label;short+=Math.max(0,qpt-qs[t.id].length)});
+  return {qs,labels,short};
+}
+
+/* ---------- added topics: storage ---------- */
+const TKEY='math5-topics-v1';
+function topicsLocalLoad(){try{return JSON.parse(localStorage.getItem(TKEY)||'[]')}catch(e){return []}}
+function topicsLocalSave(){try{localStorage.setItem(TKEY,JSON.stringify(customTopics))}catch(e){}}
+async function topicAdd(t){
+  if(mode==='shared'){try{await db.collection('topics').doc(t.id).set({label:t.label,desc:t.desc,createdAt:t.createdAt});if(!customTopics.find(x=>x.id===t.id))customTopics.push(t);return}catch(e){}}
+  customTopics.push(t);topicsLocalSave();
+}
+async function topicDel(id){
+  if(mode==='shared'){try{await db.collection('topics').doc(id).delete()}catch(e){}}
+  customTopics=customTopics.filter(x=>x.id!==id);topicsLocalSave();
+  state.topics=state.topics.filter(x=>x!==id);
+}
+$('topics').addEventListener('click',async e=>{const b=e.target.closest('button[data-rm]');if(!b)return;e.preventDefault();
+  if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='להסיר?';setTimeout(()=>{if(b.isConnected){b.classList.remove('arm');b.textContent='✕'}},3000);return}
+  await topicDel(b.dataset.rm);renderTopics();settingsChanged();status('הנושא הוסר מהרשימה','ok')});
+
+/* ---------- added topics: find them in text or a photo ---------- */
+let found=[];
+$('addImg').addEventListener('change',()=>{const f=$('addImg').files[0];$('addImgName').textContent=f?'📷 '+f.name:'📷 הוספת תמונה'});
+$('addBtn').addEventListener('click',async()=>{
+  const text=$('addText').value.trim(),img=$('addImg').files[0]||null;
+  if(!text&&!img){status('הדביקו טקסט או בחרו תמונה','err');return}
+  $('addBtn').disabled=true;status('Claude מזהה את הנושאים…');$('addOut').innerHTML='';
+  const existing=TOPICS.map(t=>t.label).concat(customTopics.map(t=>t.label));
+  try{
+    const r=await sample.json(`The user is preparing a child for a grade 5 (כיתה ה׳) math test in Israel. They give the list of test topics as ${img?'a photo (for example a teacher\'s message)':'text'}${img&&text?' and text':''}.
+Extract the math topics. These topics are already supported: ${JSON.stringify(existing)}.
+For each extracted topic decide whether an existing topic already covers the same skill.
+Ignore anything that is not a grade-5 math topic (greetings, dates, other subjects).
+Reply with only JSON: {"existing":["<existing label that matched>"],"new":[{"label":"<short Hebrew name, 2-5 words>","desc":"<one Hebrew sentence: which skills it includes>"}]}
+${text?'\nText:\n'+text.slice(0,6000):''}`,img?{images:img,cache:false}:{cache:false});
+    const ex=Array.isArray(r&&r.existing)?r.existing.filter(x=>typeof x==='string'):[];
+    found=(Array.isArray(r&&r.new)?r.new:[]).filter(x=>x&&typeof x.label==='string'&&x.label.trim()).map(x=>({label:x.label.trim().slice(0,60),desc:typeof x.desc==='string'?x.desc.trim().slice(0,200):''}))
+      .filter(x=>!existing.includes(x.label));
+    let h='<div class="found">';
+    if(found.length)h+=`<b>נושאים חדשים שזוהו:</b>${found.map((t,i)=>`<label class="chk"><input type="checkbox" id="nf_${i}" checked> ${esc(t.label)}</label>${t.desc?`<div class="d">${esc(t.desc)}</div>`:''}`).join('')}<button class="btn primary" type="button" id="addConfirm">הוספה לרשימת הנושאים</button>`;
+    else h+='<div class="hint">לא נמצאו נושאים חדשים. כל הנושאים שזוהו כבר ברשימה.</div>';
+    if(ex.length)h+=`<div class="hint">כבר ברשימה: ${ex.map(esc).join(', ')}</div>`;
+    $('addOut').innerHTML=h+'</div>';status('');
+  }catch(e){status(sampleErr(e),'err')}
+  finally{$('addBtn').disabled=false}
+});
+$('addOut').addEventListener('click',async e=>{if(e.target.id!=='addConfirm')return;
+  const pickd=found.filter((t,i)=>$('nf_'+i)&&$('nf_'+i).checked);if(!pickd.length){status('סמנו לפחות נושא אחד','err');return}
+  e.target.disabled=true;
+  for(const [i,t] of pickd.entries()){const rec={id:'c_'+Date.now().toString(36)+i,label:t.label,desc:t.desc,createdAt:Date.now()+i};await topicAdd(rec);state.topics.push(rec.id)}
+  $('addOut').innerHTML='';$('addText').value='';$('addImg').value='';$('addImgName').textContent='📷 הוספת תמונה';found=[];
+  renderTopics();settingsChanged();status(`נוספו ${pickd.length} נושאים והם כבר מסומנים. לחצו „ג׳נרט מבחן”.`,'ok');
+});
+
 /* new test must not repeat any exact question from archived tests */
 function freshSeed(){
   const old=new Set();archive.forEach(a=>{try{buildTest(a).qs.forEach(q=>old.add(q))}catch(e){}});
@@ -662,7 +800,7 @@ $('modeWs').addEventListener('click',()=>{state.mode='ws';if($('title').value===
 $('qptSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.qpt=+b.dataset.v;syncSegs();settingsChanged()});
 $('topics').addEventListener('change',settingsChanged);
 $('topics').addEventListener('click',e=>{const b=e.target.closest('button[data-g]');if(!b)return;const g=+b.dataset.g;
-  const ids=TOPICS.filter(t=>t.g===g).map(t=>t.id);const all=ids.every(id=>$('t_'+id).checked);ids.forEach(id=>$('t_'+id).checked=!all);settingsChanged()});
+  const ids=b.dataset.g==='c'?customTopics.map(t=>t.id):TOPICS.filter(t=>t.g===g).map(t=>t.id);if(b.dataset.g==='c'&&!sample)return;const all=ids.every(id=>$('t_'+id).checked);ids.forEach(id=>$('t_'+id).checked=!all);settingsChanged()});
 ['title','date'].forEach(id=>$(id).addEventListener('input',()=>{readSettings();render()}));
 $('keyChk').addEventListener('change',()=>{readSettings();render()});
 
@@ -675,7 +813,16 @@ window.__math5={buildTest,applySettings,render,state,TOPICS};
     try{db=await window.claude.use('db')}catch(e){db=null}
     let canWrite=null;try{const u=await window.claude.use('user');canWrite=u?u.can('data.write'):null}catch(e){}
     if(db&&canWrite!==false)mode='shared';
+    try{sample=await window.claude.use('sample')}catch(e){sample=null}
+    if(sample){$('addCard').hidden=false;try{const lim=await sample.limits();$('addImgWrap').hidden=!(lim&&lim.images)}catch(e){}}
   }
+  if(mode==='shared'){
+    db.collection('topics').orderBy('createdAt','asc').onSnapshot(snap=>{const before=customTopics.map(t=>t.id).join();
+      customTopics=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      const fresh=customTopics.filter(t=>before===''?!state.saved:!before.split(',').includes(t.id)).map(t=>t.id);
+      if(fresh.length&&!state.saved)state.topics.push(...fresh.filter(id=>!state.topics.includes(id)));
+      renderTopics();render()},()=>{customTopics=topicsLocalLoad();renderTopics()});
+  } else {customTopics=topicsLocalLoad();if(!state.saved)state.topics.push(...customTopics.map(t=>t.id).filter(id=>!state.topics.includes(id)));renderTopics()}
   if(mode==='local'){useLocal();dbReady=true;
     if(archive.length&&archive[0].id!=='prep-worksheet'){applySettings(archive[0]);state.currentId=archive[0].id;state.saved=true}
     render();return}
