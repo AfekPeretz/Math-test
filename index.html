@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>מחולל מבחנים כיתה ה׳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Secular+One&display=swap">
+<style>
+/* Layout: math-notebook squared paper behind a settings rail + a live A4 "paper" preview; archive of every generated test below the controls */
+:root{
+  --bg:#EEF2F5; --grid:#DCE4EB; --panel:#FFFFFF; --ink:#1B2B3A; --muted:#5C6B78; --line:#CBD5DE;
+  --accent:#C8412B; --accent-ink:#FFFFFF; --accent-soft:#F7E3DE; --navy:#1F4060; --navy-soft:#E1E9F1;
+  --ok:#2F7A4F;
+  --paper:#FFFFFF; --paper-ink:#141414; --paper-line:#BFBFBF; --paper-sq:#E3E9EE;
+  --f-display:"Secular One","Assistant",Arial,sans-serif;
+  --f-body:"Assistant",Arial,"Noto Sans Hebrew",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111920; --grid:#1A242E; --panel:#17212B; --ink:#E4EBF1; --muted:#97A6B3; --line:#2B3846;
+  --accent:#F0715A; --accent-ink:#1A0E0B; --accent-soft:#3A221D; --navy:#8DB4DA; --navy-soft:#1E2E3E; --ok:#6CC495;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111920; --grid:#1A242E; --panel:#17212B; --ink:#E4EBF1; --muted:#97A6B3; --line:#2B3846;
+  --accent:#F0715A; --accent-ink:#1A0E0B; --accent-soft:#3A221D; --navy:#8DB4DA; --navy-soft:#1E2E3E; --ok:#6CC495;
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px}
+.app{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.top h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,36px);line-height:1.1;margin:0;color:var(--navy);text-wrap:balance}
+.top p{margin:4px 0 0;color:var(--muted)}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:13px;font-weight:800;color:var(--muted);margin:0;letter-spacing:.04em}
+.gen{width:100%;font:inherit;font-family:var(--f-display);font-size:20px;padding:14px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.gen:hover{filter:brightness(1.06)}
+.gen:disabled{opacity:.6;cursor:wait}
+.btn{font:inherit;font-weight:700;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--navy)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--panel)}
+.btn:disabled{opacity:.55;cursor:wait}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>.btn{flex:1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%}
+.two{display:grid;grid-template-columns:1fr 110px;gap:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;font:inherit;font-weight:700;padding:7px 6px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--navy-soft);color:var(--navy)}
+.seg button+button{border-inline-start:1px solid var(--line)}
+.tg{display:flex;flex-direction:column;gap:4px}
+.tg-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;color:var(--navy);margin-top:4px}
+.tg-h button{font:inherit;font-size:12px;border:0;background:none;color:var(--muted);cursor:pointer;text-decoration:underline}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer;padding:2px 0}
+.chk input{width:17px;height:17px;accent-color:var(--accent);margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+.status.ok{color:var(--ok)} .status.err{color:var(--accent)}
+.arch{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+.arch-note{font-size:12px;color:var(--muted)}
+.arch-empty{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:10px}
+.ai{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ai.cur{border-color:var(--accent);background:var(--accent-soft)}
+.ai .t{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai .m{grid-column:1;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ai .acts{grid-row:1/3;grid-column:2;display:flex;gap:4px}
+.ai .acts button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:4px 7px;cursor:pointer}
+.ai .acts button.del{color:var(--accent)}
+.ai .acts button.del.arm{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.preview{min-width:0}
+.pv-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pv-tag{font-size:13px;font-weight:700;color:var(--muted)}
+.pv-tag b{color:var(--accent)}
+.scaler{position:relative;width:100%;overflow:hidden}
+.scaler>.sheet{transform-origin:top right;position:absolute;top:0;right:0;box-shadow:0 6px 24px rgba(20,40,60,.18)}
+
+/* ===== The paper (always paper-white, prints in black) ===== */
+.sheet{width:760px;background:var(--paper);color:var(--paper-ink);font-family:var(--f-body);font-size:15.5px;line-height:1.55;padding:34px 38px;direction:rtl}
+.sheet .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2.5px solid var(--paper-ink);padding-bottom:12px}
+.sh-head h2{font-family:var(--f-display);font-weight:400;font-size:28px;line-height:1.15;margin:0}
+.sh-head .sub{font-size:14px;margin-top:4px}
+.sh-fields{display:flex;flex-direction:column;gap:8px;font-weight:700;font-size:14px;min-width:200px}
+.sh-fields span{display:flex;gap:6px;align-items:flex-end}
+.sh-fields i{flex:1;border-bottom:1.5px solid var(--paper-ink);height:1em}
+.instr{font-size:14px;margin:10px 0 4px}
+.part{font-family:var(--f-display);font-weight:400;font-size:19px;margin:20px 0 4px;padding:3px 10px;border-inline-start:5px solid var(--paper-ink);background:#F1F1F1}
+.q{display:flex;gap:10px;padding:12px 0 14px;border-bottom:1px dashed var(--paper-line);break-inside:avoid;page-break-inside:avoid}
+.q .n{flex:0 0 28px;height:28px;border:2px solid var(--paper-ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.q .b{flex:1;min-width:0}
+.q .b p{margin:0 0 6px}
+.q .tag{font-size:11.5px;font-weight:700;color:#666;margin-bottom:2px}
+.sub-q{display:flex;gap:6px;margin:6px 0}
+.sub-q>b{flex:0 0 auto}
+.subs{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
+.subs.one{grid-template-columns:1fr}
+.blank{display:inline-block;min-width:56px;border-bottom:1.5px solid var(--paper-ink);height:1.15em;vertical-align:-3px;margin:0 3px}
+.blank.s{min-width:34px}
+.work{height:64px;margin-top:6px;border:1px solid #D6D6D6;background-color:#FFF;
+  background-image:linear-gradient(var(--paper-sq) 1px,transparent 1px),linear-gradient(90deg,var(--paper-sq) 1px,transparent 1px);background-size:16px 16px}
+.work.tall{height:96px}
+.calcs{display:flex;gap:40px;flex-wrap:wrap;justify-content:flex-start;margin-top:6px}
+.calc{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.vert{border-collapse:collapse;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.vert td{width:24px;height:26px;text-align:center;border:1px solid var(--paper-sq);padding:0}
+.vert tr.sum td{border-top:2.5px solid var(--paper-ink)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;margin:0 2px;font-size:.95em}
+.fr>span{padding:0 3px}
+.fr>span:first-child{border-bottom:1.6px solid currentColor}
+.mx{display:inline-flex;align-items:center;gap:1px}
+.expr{font-size:17px;font-weight:600}
+.fig{margin:6px 0;max-width:100%}
+.fig svg{display:block;max-width:100%;height:auto}
+.figs{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end}
+.figs .cap{text-align:center;font-weight:700;margin-top:2px}
+table.t{border-collapse:collapse;margin-top:6px;font-size:15px}
+table.t th,table.t td{border:1.3px solid var(--paper-ink);padding:4px 10px;text-align:center;min-width:44px}
+table.t th{background:#F1F1F1;font-weight:800}
+table.t td.l{text-align:right}
+.tf{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted #CCC}
+.tf span:last-child{white-space:nowrap;font-weight:700;font-size:13.5px}
+.box{display:inline-block;width:18px;height:20px;border:1.5px solid var(--paper-ink);vertical-align:-4px;margin:0 1px}
+.key{break-before:page;page-break-before:always;padding-top:4px}
+.key h3{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 4px;border-bottom:2.5px solid var(--paper-ink);padding-bottom:8px}
+.key ol{list-style:none;padding:0;margin:8px 0 0}
+.key li{break-inside:avoid;page-break-inside:avoid;padding:6px 0;border-bottom:1px dashed var(--paper-line);display:flex;gap:8px}
+.key li>b{flex:0 0 22px}
+.key li>div{flex:1;min-width:0}
+.key table.t{font-size:13px}
+.key table.t th,.key table.t td{padding:2px 6px;min-width:26px}
+.foot{margin-top:18px;text-align:center;font-weight:700;font-size:14px}
+@media print{
+  @page{size:A4;margin:12mm 10mm}
+  body{background:#fff}
+  .top,.panel,.pv-bar{display:none!important}
+  .app{padding:0;max-width:none}
+  .layout{display:block}
+  .scaler{height:auto!important;overflow:visible}
+  .scaler>.sheet{position:static;transform:none!important;box-shadow:none;width:auto;padding:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="app" dir="rtl">
+  <header class="top">
+    <div>
+      <h1>מחולל מבחנים במתמטיקה</h1>
+      <p>כיתה ה׳ · כל הנושאים מרשימת המבחן של 2.11 · מבחן חדש בכל לחיצה</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="card">
+        <button class="gen" id="genBtn" type="button">ג׳נרט מבחן</button>
+        <div class="row">
+          <button class="btn primary" id="pdfBtn" type="button">הורדת PDF</button>
+          <button class="btn" id="printBtn" type="button" hidden>הדפסה</button>
+        </div>
+        <div class="status" id="status" role="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>הגדרות</h2>
+        <div class="seg" role="group" aria-label="סוג הדף">
+          <button type="button" id="modeTest" aria-pressed="true">מבחן</button>
+          <button type="button" id="modeWs" aria-pressed="false">דף עבודה</button>
+        </div>
+        <div class="two">
+          <label class="f">כותרת<input type="text" id="title" value="מבחן במתמטיקה"></label>
+          <label class="f">תאריך<input type="text" id="date" value="2.11"></label>
+        </div>
+        <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)">שאלות לכל נושא
+          <div class="seg" role="group" aria-label="שאלות לכל נושא" id="qptSeg">
+            <button type="button" data-v="1" aria-pressed="true">1</button>
+            <button type="button" data-v="2" aria-pressed="false">2</button>
+            <button type="button" data-v="3" aria-pressed="false">3</button>
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="keyChk" checked> דף פתרונות בסוף</label>
+      </div>
+
+      <div class="card">
+        <h2>נושאים</h2>
+        <div id="topics"></div>
+      </div>
+
+      <div class="card">
+        <h2>ארכיון מבחנים</h2>
+        <div class="arch" id="arch"><div class="arch-empty">טוען את הארכיון…</div></div>
+        <div class="arch-note" id="archNote"></div>
+      </div>
+    </aside>
+
+    <main class="preview">
+      <div class="pv-bar"><div class="pv-tag" id="pvTag"></div></div>
+      <div class="scaler" id="scaler"><div class="sheet" id="sheet"></div></div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+/* ---------- seeded randomness ---------- */
+let R=Math.random;
+function seedRng(s){let a=s>>>0;R=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const ri=(a,b)=>a+Math.floor(R()*(b-a+1));
+const pick=a=>a[Math.floor(R()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=n=>n.toLocaleString('en-US');
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const L=s=>`<span class="ltr" dir="ltr">${s}</span>`;
+const fr=(n,d)=>`<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const mx=(w,n,d)=>`<span class="mx">${w}${fr(n,d)}</span>`;
+const BL='<span class="blank"></span>', BS='<span class="blank s"></span>';
+const HL=['א','ב','ג','ד','ה','ו'];
+const INK='#141414', SHADE='#9A9A9A', SVGF='font-family="Assistant,Arial,sans-serif" direction="ltr"';
+function frVal(n,d){ // simplified, mixed when > 1
+  if(n===0)return '0';const g=gcd(n,d),N=n/g,D=d/g;
+  if(D===1)return String(N);
+  if(N>D)return mx(Math.floor(N/D),N%D,D);
+  return fr(N,D);
+}
+function frShow(n,d){const g=gcd(n,d);return g>1||n>d?`${fr(n,d)} = ${frVal(n,d)}`:fr(n,d)}
+const subs=(items,one)=>`<div class="subs${one?' one':''}">${items.map((h,i)=>`<div class="sub-q"><b>${HL[i]}.</b><div>${h}</div></div>`).join('')}</div>`;
+const ansList=items=>items.map((h,i)=>`${HL[i]}. ${h}`).join('<br>');
+
+function vert(nums,op,extra,minW){
+  const s=nums.map(String);let w=Math.max(...s.map(x=>x.length))+1;if(minW)w=Math.max(w,minW);
+  let rows='';
+  s.forEach((x,i)=>{const c=[];for(let k=0;k<w;k++){const idx=k-(w-x.length);c.push(idx>=0?x[idx]:'')}
+    if(i===s.length-1)c[0]=op;rows+=`<tr>${c.map(v=>`<td>${v}</td>`).join('')}</tr>`});
+  for(let r=0;r<extra;r++)rows+=`<tr class="${r===0?'sum':''}">${'<td></td>'.repeat(w)}</tr>`;
+  return `<table class="vert" dir="ltr">${rows}</table>`;
+}
+
+/* ---------- generators: each returns {q, a} ---------- */
+function gMult(){
+  const a=ri(124,986),b=ri(13,89),p=a*b;
+  return {q:`<p>פתרו בכפל במאונך:</p><div class="calcs"><div class="calc">${vert([a,b],'×',4,String(p).length+1)}</div></div>`,
+    a:L(`${a} × ${b} = ${fmt(p)}`)};
+}
+function gDistrib(i){
+  const v=i%3;
+  if(v===0){const a=ri(3,9),t=ri(2,9)*10,u=ri(1,9),b=t+u;
+    return {q:`<p>חשבו בעזרת חוק הפילוג (פרקו את המספר לעשרות ויחידות):</p><p class="expr">${L(`${a} × ${b} = ${a} × (${BS} + ${BS}) = ${BL} + ${BL} = ${BL}`)}</p>`,
+      a:L(`${a} × (${t} + ${u}) = ${a*t} + ${a*u} = ${a*b}`)}}
+  if(v===1){const a=ri(12,85),m=pick([99,98,101,19,21]),base=m>50?100:20,d=m-base;
+    const sign=d<0?'−':'+',ad=Math.abs(d);
+    return {q:`<p>חשבו בדרך מקוצרת בעזרת חוק הפילוג:</p><p class="expr">${L(`${a} × ${m} = ${a} × (${base} ${sign} ${ad}) = ${BL}`)}</p>`,
+      a:L(`${a} × (${base} ${sign} ${ad}) = ${a*base} ${sign} ${a*ad} = ${fmt(a*m)}`)}}
+  const a=ri(12,49),tot=pick([10,100]),b=tot===10?ri(2,8):ri(21,79),c=tot-b;
+  return {q:`<p>חשבו בדרך הקצרה ביותר. רמז: חוק הפילוג.</p><p class="expr">${L(`${a} × ${b} + ${a} × ${c} = ${BL}`)}</p>`,
+    a:L(`${a} × (${b} + ${c}) = ${a} × ${tot} = ${fmt(a*tot)}`)};
+}
+function gDiv(i){
+  const v=i%3;
+  if(v===0){const d=ri(3,9),q=ri(112,1100),n=d*q;
+    return {q:`<p>פתרו בחילוק ארוך:</p><p class="expr">${L(`${fmt(n)} : ${d} = ${BL}`)}</p><div class="work"></div>`,a:L(`${fmt(n)} : ${d} = ${fmt(q)}`)}}
+  if(v===1){const d=ri(4,9),q=ri(105,980),r=ri(1,d-1),n=d*q+r;
+    return {q:`<p>חלקו וכתבו את המנה ואת השארית:</p><p class="expr">${L(`${fmt(n)} : ${d} = ${BL}`)} &nbsp; שארית ${BS}</p><div class="work"></div>`,
+      a:`${L(`${fmt(n)} : ${d} = ${q}`)} שארית ${r}`}}
+  const d=pick([12,15,24,25,32,45]),q=ri(11,48),n=d*q;
+  return {q:`<p>פתרו את תרגיל החילוק:</p><p class="expr">${L(`${fmt(n)} : ${d} = ${BL}`)}</p><div class="work"></div>`,a:L(`${fmt(n)} : ${d} = ${q}`)};
+}
+function gAddSub(){
+  const a=ri(105000,598000),b=ri(12000,1000000-a-1);
+  const big=R()<.35;const c=big?1000000:ri(350000,990000),e=big?ri(123456,876543):ri(15000,c-20000);
+  return {q:`<p>פתרו במאונך:</p><div class="calcs"><div class="calc"><b>א.</b>${vert([a,b],'+',1,7)}</div><div class="calc"><b>ב.</b>${vert([c,e],'−',1,8)}</div></div>`,
+    a:`א. ${L(`${fmt(a)} + ${fmt(b)} = ${fmt(a+b)}`)}<br>ב. ${L(`${fmt(c)} − ${fmt(e)} = ${fmt(c-e)}`)}`};
+}
+const ORDER=[
+ ()=>{const a=ri(5,40),b=ri(2,9),c=ri(3,12);return[`${a} + ${b} × ${c}`,a+b*c]},
+ ()=>{const a=ri(3,15),b=ri(2,12),c=ri(2,9);return[`(${a} + ${b}) × ${c}`,(a+b)*c]},
+ ()=>{const c=ri(2,9),q=ri(2,12),b=c*q,a=ri(q+3,60);return[`${a} − ${b} : ${c}`,a-q]},
+ ()=>{const b=ri(8,20),c=ri(1,b-2),a=ri(2,9);return[`${a} × (${b} − ${c})`,a*(b-c)]},
+ ()=>{const b=ri(2,9),q=ri(2,10),a=b*q,c=ri(2,9),d=ri(2,9);return[`${a} : ${b} + ${c} × ${d}`,q+c*d]},
+ ()=>{const c=ri(2,9),q=ri(2,9),b=ri(2,30),a=b+c*q;return[`(${a} − ${b}) : ${c}`,q]},
+ ()=>{const a=ri(20,80),b=ri(2,6),c=ri(2,6),d=ri(1,a);return[`${a} + ${b} × ${c} − ${d}`,a+b*c-d]},
+ ()=>{const a=ri(3,9),b=ri(3,9),c=ri(2,9),d=ri(2,Math.max(2,Math.floor(a*b/c)));return c*d<=a*b?[`${a} × ${b} − ${c} × ${d}`,a*b-c*d]:[`${a} × ${b} + ${c} × ${d}`,a*b+c*d]},
+];
+function gOrder(){
+  const ex=shuffle(ORDER).slice(0,4).map(f=>f());
+  return {q:`<p>חשבו לפי סדר פעולות החשבון:</p>${subs(ex.map(e=>`<span class="expr">${L(`${e[0]} = ${BL}`)}</span>`))}`,
+    a:ansList(ex.map(e=>L(`${e[0]} = ${e[1]}`)))};
+}
+function numLineSvg(n,labels,marks,frac){
+  const W=640,x0=30,x1=610,dx=(x1-x0)/n;let s=`<svg viewBox="0 0 ${W} 84" width="${W}" xmlns="http://www.w3.org/2000/svg" ${SVGF}>`;
+  s+=`<line x1="${x0-14}" y1="44" x2="${x1+16}" y2="44" stroke="${INK}" stroke-width="2"/><path d="M${x1+20} 44 l-9 -5 v10z" fill="${INK}"/>`;
+  for(let i=0;i<=n;i++){const x=x0+i*dx,big=frac&&labels[i]!==undefined;s+=`<line x1="${x}" y1="${big?34:37}" x2="${x}" y2="${big?54:51}" stroke="${INK}" stroke-width="${big?2.4:1.6}"/>`;
+    if(labels[i]!==undefined)s+=`<text x="${x}" y="74" text-anchor="middle" font-size="16" font-weight="700" fill="${INK}">${labels[i]}</text>`}
+  marks.forEach(m=>{const x=x0+m.i*dx;s+=`<text x="${x}" y="15" text-anchor="middle" font-size="16" font-weight="800" fill="${INK}">${m.t}</text><path d="M${x} 32 l-5 -9 h10z" fill="${INK}"/>`});
+  return s+'</svg>';
+}
+function gNumLine(){
+  const c=pick([{s:ri(1,9)*100,st:10},{s:ri(1,9)*1000,st:100},{s:ri(2,40)*1000,st:500},{s:ri(1,9)*10000,st:1000},{s:ri(2,8)*100000,st:10000},{s:0,st:25},{s:ri(1,6)*1000,st:250}]);
+  const n=10,k=pick([2,4,5]);const labels={0:fmt(c.s),[k]:fmt(c.s+k*c.st)};
+  const free=shuffle([1,3,6,7,8,9].filter(i=>i!==k));const ia=free[0],ib=free[1],ic=free[2];
+  const tgt=c.s+ic*c.st;
+  return {q:`<p>בישר המספרים שלפניכם המרחקים בין הקווים שווים.</p><div class="fig">${numLineSvg(n,labels,[{i:ia,t:'א'},{i:ib,t:'ב'}])}</div>
+    ${subs([`מהו המספר בנקודה א? ${BL}`,`מהו המספר בנקודה ב? ${BL}`,`בכמה גדל המספר בכל קפיצה בין שני קווים סמוכים? ${BL}`,`סמנו בחץ על הישר את המספר ${L(fmt(tgt))}.`])}`,
+    a:ansList([L(fmt(c.s+ia*c.st)),L(fmt(c.s+ib*c.st)),`${L(fmt(c.st))}`,`הקו ה-${ic} אחרי ${L(fmt(c.s))}`])};
+}
+function gDivis(i){
+  const v=i%2;
+  if(v===0){
+    let k6;do{k6=ri(20,160)}while(k6%3===0||k6%5===0);
+    let k5;do{k5=10*ri(11,399)+5}while(k5%3===0);
+    const list=shuffle([90*ri(3,99),6*k6,k5,ri(1001,9997)]);const D=[2,5,10,3,6,9];
+    const row=n=>D.map(d=>n%d===0?'✓':'✗');
+    return {q:`<p>סמנו ✓ אם המספר מתחלק ללא שארית ו-✗ אם לא:</p><div style="overflow-x:auto"><table class="t"><tr><th>המספר</th>${D.map(d=>`<th>${d}</th>`).join('')}</tr>${list.map(n=>`<tr><td>${L(fmt(n))}</td>${D.map(()=>'<td></td>').join('')}</tr>`).join('')}</table></div>`,
+      a:`<table class="t"><tr><th></th>${D.map(d=>`<th>${d}</th>`).join('')}</tr>${list.map(n=>`<tr><td>${L(fmt(n))}</td>${row(n).map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`};
+  }
+  const d=pick([3,9,6]);let digits,pos,opts;
+  for(let t=0;t<50;t++){digits=[ri(1,9),ri(0,9),ri(0,9),d===6?pick([0,2,4,6,8]):ri(0,9)];pos=ri(1,2);
+    opts=[];for(let x=0;x<10;x++){const dd=digits.slice();dd[pos]=x;const n=+dd.join('');if(n%d===0)opts.push(x)}if(opts.length)break}
+  const shown=digits.map((x,j)=>j===pos?'<span class="box"></span>':x).join('');
+  const rule={3:'סכום הספרות מתחלק ב-3',9:'סכום הספרות מתחלק ב-9',6:'זוגי וסכום הספרות מתחלק ב-3'}[d];
+  return {q:`<p>אילו ספרות אפשר לכתוב בריבוע כך שהמספר יתחלק ב-${d} ללא שארית? כתבו את כל האפשרויות.</p><p class="expr">${L(shown)}</p><p>תשובה: ${BL}${BL}</p>`,
+    a:`${opts.join(', ')} <span style="font-size:13px">(${rule})</span>`};
+}
+function gFracLine(){
+  const two=R()<.4,d=two?ri(2,5):ri(3,10),n=two?2*d:d;
+  const labels={0:'0',[d]:'1'};if(two)labels[2*d]='2';
+  const pool=shuffle([...Array(n).keys()].filter(i=>i>0&&i%d!==0));const A=pool[0],B=pool[1];
+  return {q:`<p>איזה שבר מתאים לכל נקודה? (אפשר לכתוב שבר מעורב)</p><div class="fig">${numLineSvg(n,labels,[{i:A,t:'א'},{i:B,t:'ב'}],true)}</div>${subs([`נקודה א: ${BL}`,`נקודה ב: ${BL}`])}`,
+    a:ansList([L(frShow(A,d)),L(frShow(B,d))])};
+}
+function shapeSvg(type){
+  let d,sh=new Set(),s;
+  if(type==='pie'){d=ri(3,8);const k=ri(1,d-1);shuffle([...Array(d).keys()]).slice(0,k).forEach(x=>sh.add(x));
+    const S=110,r=50,c=55;s=`<svg viewBox="0 0 ${S} ${S}" width="${S}" xmlns="http://www.w3.org/2000/svg">`;
+    for(let i=0;i<d;i++){const a0=-Math.PI/2+i*2*Math.PI/d,a1=a0+2*Math.PI/d;
+      s+=`<path d="M${c} ${c}L${(c+r*Math.cos(a0)).toFixed(2)} ${(c+r*Math.sin(a0)).toFixed(2)}A${r} ${r} 0 0 1 ${(c+r*Math.cos(a1)).toFixed(2)} ${(c+r*Math.sin(a1)).toFixed(2)}Z" fill="${sh.has(i)?SHADE:'#fff'}" stroke="${INK}" stroke-width="1.6"/>`}
+    s+='</svg>'}
+  else if(type==='bar'){d=ri(4,10);const k=ri(1,d-1);shuffle([...Array(d).keys()]).slice(0,k).forEach(x=>sh.add(x));
+    const W=210,H=44,w=(W-4)/d;s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" xmlns="http://www.w3.org/2000/svg">`;
+    for(let i=0;i<d;i++)s+=`<rect x="${(2+i*w).toFixed(2)}" y="2" width="${w.toFixed(2)}" height="${H-4}" fill="${sh.has(i)?SHADE:'#fff'}" stroke="${INK}" stroke-width="1.6"/>`;s+='</svg>'}
+  else{const c=ri(3,5);d=2*c;const k=ri(1,d-1);shuffle([...Array(d).keys()]).slice(0,k).forEach(x=>sh.add(x));
+    const q=30,W=c*q+4,H=2*q+4;s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" xmlns="http://www.w3.org/2000/svg">`;
+    for(let i=0;i<d;i++)s+=`<rect x="${2+(i%c)*q}" y="${2+Math.floor(i/c)*q}" width="${q}" height="${q}" fill="${sh.has(i)?SHADE:'#fff'}" stroke="${INK}" stroke-width="1.6"/>`;s+='</svg>'}
+  return {svg:s,k:sh.size,d};
+}
+function gFracVis(){
+  const ts=shuffle(['pie','bar','grid']).slice(0,2).map(shapeSvg);const notIdx=ri(0,1);
+  return {q:`<p>איזה חלק מכל צורה ${'<b>צבוע</b>'}? בצורה ${HL[notIdx]} כתבו גם איזה חלק <b>אינו</b> צבוע.</p><div class="figs">${ts.map((t,i)=>`<div><div class="fig">${t.svg}</div><div class="cap">${HL[i]}. ${BL}</div></div>`).join('')}</div>`,
+    a:ansList(ts.map((t,i)=>`צבוע ${L(frShow(t.k,t.d))}${i===notIdx?` · לא צבוע ${L(frShow(t.d-t.k,t.d))}`:''}`))};
+}
+function gFracOps(){
+  const T=[
+    ()=>{const d=ri(5,12),a=ri(1,d-2),b=ri(1,d-a-1);return[`${fr(a,d)} + ${fr(b,d)}`,frVal(a+b,d)]},
+    ()=>{const d=ri(4,9),a=ri(2,d-1),b=ri(d-a+1,d-1);return[`${fr(a,d)} + ${fr(b,d)}`,frVal(a+b,d)]},
+    ()=>{const d=ri(5,12),a=ri(3,d-1),b=ri(1,a-1);return[`${fr(a,d)} − ${fr(b,d)}`,frVal(a-b,d)]},
+    ()=>{const d=ri(3,9),a=ri(1,d-1);return[`1 − ${fr(a,d)}`,frVal(d-a,d)]},
+    ()=>{const d=ri(4,8),w1=ri(1,4),w2=ri(1,3),a=ri(1,d-2),b=ri(1,d-a-1);return[`${mx(w1,a,d)} + ${mx(w2,b,d)}`,frVal((w1+w2)*d+a+b,d)]},
+    ()=>{const d=ri(4,9),w1=ri(3,6),w2=ri(1,w1-1),a=ri(2,d-1),b=ri(1,a-1);return[`${mx(w1,a,d)} − ${mx(w2,b,d)}`,frVal((w1-w2)*d+a-b,d)]},
+    ()=>{const p=pick([[2,4],[2,6],[3,6],[2,8],[4,8],[5,10],[3,9]]),m=p[1]/p[0],a=ri(1,p[0]-1),b=ri(1,p[1]-1-a*m>0?p[1]-1-a*m:1);return[`${fr(a,p[0])} + ${fr(b,p[1])}`,frVal(a*m+b,p[1])]},
+  ];
+  const ex=shuffle(T).slice(0,4).map(f=>f());
+  return {q:`<p>חשבו. אם אפשר, צמצמו או כתבו כשבר מעורב:</p>${subs(ex.map(e=>`<span class="expr">${L(`${e[0]} = ${BL}`)}</span>`))}`,
+    a:ansList(ex.map(e=>L(`${e[0]} = ${e[1]}`)))};
+}
+const NAMES=['נועה','איתי','מאיה','יואב','תמר','עומר','שירה','אורי','הדר','רועי'];
+const WORD=[
+  ()=>{const r=ri(12,34),c=ri(14,28);return{q:`באולם המופעים של בית הספר יש ${r} שורות של כיסאות, ובכל שורה ${c} כיסאות. כמה כיסאות יש באולם?`,a:L(`${r} × ${c} = ${fmt(r*c)}`)+' כיסאות'}},
+  ()=>{const k=pick([40,45,50,55]),n=ri(4,11)*k+ri(3,k-5);const b=Math.ceil(n/k);return{q:`${n} תלמידים יוצאים לטיול שנתי. בכל אוטובוס יש ${k} מקומות. כמה אוטובוסים צריך להזמין לפחות? הסבירו.`,a:`${L(`${n} : ${k} = ${Math.floor(n/k)}`)} שארית ${n%k}, לכן צריך ${b} אוטובוסים`}},
+  ()=>{const a=ri(150,900)*1000+ri(0,999),b=ri(60,a/1000-40)*1000+ri(0,999);return{q:`בעיר א׳ גרים ${L(fmt(a))} תושבים, ובעיר ב׳ גרים ${L(fmt(b))} תושבים.${'<br>'}בכמה תושבים עיר א׳ גדולה מעיר ב׳? כמה תושבים גרים בשתי הערים יחד?`,a:`הפרש: ${L(fmt(a-b))} · יחד: ${L(fmt(a+b))}`}},
+  ()=>{const nm=pick(NAMES),d=pick([6,8,9,10,12]),k1=ri(1,Math.floor(d/2)-1)||1,k2=ri(1,d-k1-1);return{q:`${nm} קראה ביום ראשון ${L(fr(k1,d))} מהספר, וביום שני ${L(fr(k2,d))} מהספר.${'<br>'}איזה חלק מהספר קראה בשני הימים? איזה חלק נשאר לה לקרוא?`,a:`קראה ${L(frShow(k1+k2,d))} · נשאר ${L(frShow(d-k1-k2,d))}`}},
+  ()=>{const nm=pick(NAMES);let n,p,m,q,t;do{n=ri(3,8);p=ri(6,14);m=ri(2,6);q=ri(4,12);t=n*p+m*q}while(t>=200);return{q:`${nm} קנה ${n} מחברות ב-${p} ₪ כל אחת, ו-${m} עטים ב-${q} ₪ כל אחד. הוא שילם בשטר של 200 ₪. כמה עודף קיבל?`,a:L(`200 − (${n} × ${p} + ${m} × ${q}) = 200 − ${t} = ${200-t}`)+' ₪'}},
+  ()=>{const k=pick([6,8,12,15]),n=ri(140,950);return{q:`במאפייה אפו ${n} עוגיות וארזו אותן בקופסאות של ${k} עוגיות. כמה קופסאות מלאות התקבלו, וכמה עוגיות נשארו מחוץ לקופסאות?`,a:`${L(`${n} : ${k} = ${Math.floor(n/k)}`)} קופסאות, נשארו ${n%k} עוגיות`}},
+  ()=>{const d=pick([4,5,8,10]),k=ri(1,d-1),tot=d*ri(4,12);return{q:`בכיתה ${tot} תלמידים. ${L(fr(k,d))} מהם הגיעו לבית הספר באופניים. כמה תלמידים הגיעו באופניים?`,a:L(`${tot} : ${d} × ${k} = ${tot/d*k}`)+' תלמידים'}},
+];
+function gWord(){const w=pick(WORD)();return {q:`<p>${w.q}</p><div class="work tall"></div><p>תשובה: ${BL}${BL}</p>`,a:w.a}}
+function linesSvg(){
+  const types=shuffle(['par','perp','inter']);const CW=180,H=150;
+  let s=`<svg viewBox="0 0 ${CW*3} ${H}" width="${CW*3}" xmlns="http://www.w3.org/2000/svg" ${SVGF}>`;
+  const seg=(cx,cy,ang,half)=>{const u=[Math.cos(ang),Math.sin(ang)];return `<line x1="${(cx-u[0]*half).toFixed(1)}" y1="${(cy-u[1]*half).toFixed(1)}" x2="${(cx+u[0]*half).toFixed(1)}" y2="${(cy+u[1]*half).toFixed(1)}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`};
+  types.forEach((t,i)=>{const cx=CW*(2-i)+CW/2,cy=62,th=(ri(-30,30))*Math.PI/180;
+    if(t==='par'){const n=[-Math.sin(th),Math.cos(th)],o=ri(20,26);s+=seg(cx+n[0]*o,cy+n[1]*o,th,62)+seg(cx-n[0]*o,cy-n[1]*o,th,62)}
+    else if(t==='perp'){s+=seg(cx,cy,th,58)+seg(cx+Math.cos(th)*ri(-12,12),cy+Math.sin(th)*ri(-12,12),th+Math.PI/2,48)}
+    else{s+=seg(cx,cy,th,58)+seg(cx,cy,th+ri(35,58)*Math.PI/180,52)}
+    s+=`<text x="${cx}" y="${H-6}" text-anchor="middle" font-size="17" font-weight="800" fill="${INK}">${HL[i]}</text>`});
+  return {svg:s+'</svg>',types};
+}
+function gLines(i){
+  if(i%2===0){const l=linesSvg(),nm={par:'מקבילים',perp:'מאונכים',inter:'נחתכים (לא מאונכים)'};
+    return {q:`<p>לפניכם שלושה זוגות של ישרים. כתבו ליד כל אות אם הישרים <b>מקבילים</b>, <b>מאונכים</b> או <b>נחתכים</b> (לא בזווית ישרה).</p><div class="fig" style="overflow-x:auto">${l.svg}</div>${subs([BL+BL,BL+BL,BL+BL])}`,
+      a:ansList(l.types.map(t=>nm[t]))}}
+  const sides=['AB','BC','CD','DA'],opp={AB:'CD',BC:'DA',CD:'AB',DA:'BC'},adj={AB:['BC','DA'],BC:['AB','CD'],CD:['BC','DA'],DA:['AB','CD']};
+  const s1=pick(sides),s2=pick(sides.filter(x=>x!==s1)),s3=pick(sides),len=ri(4,12);
+  const svg=`<svg viewBox="0 0 260 150" width="260" xmlns="http://www.w3.org/2000/svg" ${SVGF}><rect x="40" y="25" width="180" height="95" fill="#fff" stroke="${INK}" stroke-width="2.4"/>
+  <path d="M40 108h12v12" fill="none" stroke="${INK}" stroke-width="1.4"/><path d="M220 108h-12v12" fill="none" stroke="${INK}" stroke-width="1.4"/><path d="M40 37h12v-12" fill="none" stroke="${INK}" stroke-width="1.4"/><path d="M220 37h-12v-12" fill="none" stroke="${INK}" stroke-width="1.4"/>
+  <g font-size="18" font-weight="800" fill="${INK}"><text x="22" y="138">A</text><text x="226" y="138">B</text><text x="226" y="20">C</text><text x="22" y="20">D</text></g></svg>`;
+  const nm=x=>L(x);
+  return {q:`<p>ABCD הוא מלבן.</p><div class="fig">${svg}</div>${subs([`איזו צלע מקבילה לצלע ${nm(s1)}? ${BL}`,`כתבו שתי צלעות הסמוכות לצלע ${nm(s2)}: ${BL} ${BL}`,`אילו צלעות מאונכות לצלע ${nm(s3)}? ${BL} ${BL}`,`אורך הצלע ${nm(s1)} הוא ${len} ס״מ. מה אורך הצלע ${nm(opp[s1])}? ${BL}`],true)}`,
+    a:ansList([nm(opp[s1]),`${nm(adj[s2][0])}, ${nm(adj[s2][1])}`,`${nm(adj[s3][0])}, ${nm(adj[s3][1])}`,`${len} ס״מ (צלעות נגדיות במלבן שוות)`])};
+}
+function gTri(i){
+  if(i%2===0){
+    const rows=shuffle(['eq','iso','sc']).map(t=>{if(t==='eq'){const a=ri(3,12);return[t,[a,a,a]]}
+      if(t==='iso'){const a=ri(5,12);let b;do{b=ri(2,2*a-1)}while(b===a);return[t,shuffle([a,a,b])]}
+      let a,b,c;do{a=ri(3,9);b=ri(a+1,12);c=ri(b+1,a+b-1)}while(c<=b);return[t,shuffle([a,b,c])]});
+    const nm={eq:'שווה צלעות',iso:'שווה שוקיים',sc:'שונה צלעות'};
+    return {q:`<p>מיינו כל משולש לפי אורכי הצלעות שלו (בס״מ): שווה צלעות, שווה שוקיים או שונה צלעות.</p><table class="t"><tr><th>משולש</th><th>אורכי הצלעות</th><th>סוג המשולש</th></tr>${rows.map((r,j)=>`<tr><td>${HL[j]}</td><td>${L(r[1].join(' , '))}</td><td style="min-width:150px"></td></tr>`).join('')}</table>`,
+      a:ansList(rows.map(r=>nm[r[0]]))};
+  }
+  const rows=shuffle(['acute','right','obtuse']).map(t=>{let A;if(t==='right'){const x=ri(20,70);A=[90,x,90-x]}
+    else if(t==='obtuse'){const o=ri(95,140),x=ri(10,180-o-10);A=[o,x,180-o-x]}
+    else{const a=ri(50,85),b=ri(Math.max(91-a,35),Math.min(88,179-a));A=[a,b,180-a-b]}
+    const miss=ri(0,2);return[t,A,miss]});
+  const nm={acute:'חד־זווית',right:'ישר־זווית',obtuse:'קהה־זווית'};
+  return {q:`<p>סכום הזוויות במשולש הוא ${L('180°')}. השלימו את הזווית החסרה ומיינו את המשולש: חד־זווית, ישר־זווית או קהה־זווית.</p><table class="t"><tr><th>משולש</th><th>זווית 1</th><th>זווית 2</th><th>זווית 3</th><th>סוג המשולש</th></tr>${rows.map((r,j)=>`<tr><td>${HL[j]}</td>${r[1].map((v,k)=>`<td>${k===r[2]?'':L(v+'°')}</td>`).join('')}<td style="min-width:120px"></td></tr>`).join('')}</table>`,
+    a:ansList(rows.map(r=>`${L(r[1][r[2]]+'°')} · ${nm[r[0]]}`))};
+}
+const QUAD=[['בריבוע כל הצלעות שוות באורכן.',1],['במלבן כל הצלעות שוות באורכן.',0],['בכל מלבן יש 4 זוויות ישרות.',1],['כל ריבוע הוא גם מלבן.',1],['כל מלבן הוא גם ריבוע.',0],['במלבן הצלעות הנגדיות מקבילות ושוות.',1],['בריבוע הצלעות הסמוכות מקבילות זו לזו.',0],['במלבן הצלעות הסמוכות מאונכות זו לזו.',1],['במלבן יש שתי זוויות חדות ושתי זוויות קהות.',0],['היקף ריבוע שווה לאורך הצלע כפול 4.',1],['לריבוע ולמלבן יש 4 צלעות ו-4 קודקודים.',1],['במלבן יש רק זוג אחד של צלעות מקבילות.',0]];
+function gQuad(){
+  let st;do{st=shuffle(QUAD).slice(0,5)}while(st.every(x=>x[1])||st.every(x=>!x[1]));
+  return {q:`<p>סמנו ליד כל משפט: נכון או לא נכון.</p>${st.map((x,j)=>`<div class="tf"><span>${HL[j]}. ${x[0]}</span><span>נכון / לא נכון</span></div>`).join('')}`,
+    a:ansList(st.map(x=>x[1]?'נכון':'לא נכון'))};
+}
+function rectSvg(w,h,lw,lh){const sc=Math.min(200/w,110/h),W=w*sc,H=h*sc;
+  return `<svg viewBox="0 0 ${W+90} ${H+50}" width="${(W+90).toFixed(0)}" xmlns="http://www.w3.org/2000/svg" ${SVGF}><rect x="60" y="10" width="${W.toFixed(1)}" height="${H.toFixed(1)}" fill="#fff" stroke="${INK}" stroke-width="2.4"/>
+  <text x="${(60+W/2).toFixed(1)}" y="${(H+36).toFixed(1)}" direction="rtl" text-anchor="middle" font-size="16" font-weight="700" fill="${INK}">${lw}</text>
+  <text x="54" y="${(10+H/2+5).toFixed(1)}" direction="rtl" text-anchor="start" font-size="16" font-weight="700" fill="${INK}">${lh}</text></svg>`}
+function gArea(i){
+  const v=i%4;
+  if(v===0){let w=ri(5,15),h=ri(2,9);if(w===h)w++;return{q:`<p>חשבו את השטח ואת ההיקף של המלבן.</p><div class="fig">${rectSvg(w,h,`${w} ס״מ`,`${h} ס״מ`)}</div>${subs([`שטח: ${BL} סמ״ר`,`היקף: ${BL} ס״מ`])}`,a:`שטח ${L(`${w} × ${h} = ${w*h}`)} סמ״ר · היקף ${L(`2 × (${w} + ${h}) = ${2*(w+h)}`)} ס״מ`}}
+  if(v===1){const s=ri(3,12);return{q:`<p>אורך הצלע של ריבוע הוא ${s} ס״מ. חשבו את השטח ואת ההיקף שלו.</p><div class="fig">${rectSvg(s,s,`${s} ס״מ`,'')}</div>${subs([`שטח: ${BL} סמ״ר`,`היקף: ${BL} ס״מ`])}`,a:`שטח ${L(`${s} × ${s} = ${s*s}`)} סמ״ר · היקף ${L(`4 × ${s} = ${4*s}`)} ס״מ`}}
+  if(v===2){const a=ri(4,12),b=ri(3,15);return{q:`<p>שטח של מלבן הוא ${a*b} סמ״ר. אורך אחת הצלעות שלו הוא ${a} ס״מ.</p>${subs([`מה אורך הצלע הסמוכה לה? ${BL} ס״מ`,`מה היקף המלבן? ${BL} ס״מ`])}<div class="work"></div>`,a:`${L(`${a*b} : ${a} = ${b}`)} ס״מ · היקף ${L(`2 × (${a} + ${b}) = ${2*(a+b)}`)} ס״מ`}}
+  const s=ri(3,15);return{q:`<p>היקף של ריבוע הוא ${4*s} ס״מ.</p>${subs([`מה אורך הצלע של הריבוע? ${BL} ס״מ`,`מה שטח הריבוע? ${BL} סמ״ר`])}<div class="work"></div>`,a:`צלע ${L(`${4*s} : 4 = ${s}`)} ס״מ · שטח ${L(`${s} × ${s} = ${s*s}`)} סמ״ר`};
+}
+const CHARTS=[
+  {title:'הפרי האהוב על תלמידי הכיתה',cats:['תפוח','בננה','ענבים','אבטיח','מנגו'],unit:1,max:12,lab:2,y:'מספר תלמידים',
+   qs:(c,v,a,b,mx,mn,tot)=>[`כמה תלמידים בחרו ב${c[a]}?`,`איזה פרי נבחר הכי הרבה פעמים, ואיזה הכי מעט?`,`בכמה תלמידים יותר בחרו ב${c[b[0]]} מאשר ב${c[b[1]]}?`,`כמה תלמידים השתתפו בסקר בסך הכול?`],
+   as:(c,v,a,b,mx,mn,tot)=>[`${v[a]}`,`הכי הרבה: ${c[mx]} · הכי מעט: ${c[mn]}`,`${L(`${v[b[0]]} − ${v[b[1]]} = ${v[b[0]]-v[b[1]]}`)}`,`${tot}`]},
+  {title:'מספר הספרים שהשאילה ספריית בית הספר',cats:['ספטמבר','אוקטובר','נובמבר','דצמבר','ינואר'],unit:5,max:60,lab:10,y:'מספר ספרים',
+   qs:(c,v,a,b)=>[`כמה ספרים הושאלו בחודש ${c[a]}?`,`באיזה חודש הושאלו הכי הרבה ספרים, ובאיזה הכי מעט?`,`בכמה ספרים יותר הושאלו ב${c[b[0]]} מאשר ב${c[b[1]]}?`,`כמה ספרים הושאלו בכל החודשים יחד?`],
+   as:(c,v,a,b,mx,mn,tot)=>[`${v[a]}`,`הכי הרבה: ${c[mx]} · הכי מעט: ${c[mn]}`,`${L(`${v[b[0]]} − ${v[b[1]]} = ${v[b[0]]-v[b[1]]}`)}`,`${tot}`]},
+  {title:'מספר המשתתפים בכל חוג אחר הצהריים',cats:['כדורגל','כדורסל','שחייה','ריקוד','ג׳ודו'],unit:2,max:20,lab:4,y:'מספר משתתפים',
+   qs:(c,v,a,b)=>[`כמה ילדים משתתפים בחוג ${c[a]}?`,`באיזה חוג הכי הרבה משתתפים, ובאיזה הכי מעט?`,`בכמה משתתפים יותר יש בחוג ${c[b[0]]} מאשר בחוג ${c[b[1]]}?`,`כמה משתתפים יש בכל החוגים יחד?`],
+   as:(c,v,a,b,mx,mn,tot)=>[`${v[a]}`,`הכי הרבה: ${c[mx]} · הכי מעט: ${c[mn]}`,`${L(`${v[b[0]]} − ${v[b[1]]} = ${v[b[0]]-v[b[1]]}`)}`,`${tot}`]},
+];
+function gChart(i){
+  const C=CHARTS[i%CHARTS.length],n=C.cats.length,steps=C.max/C.unit;let v;
+  do{v=C.cats.map(()=>ri(1,steps)*C.unit);const s=v.slice().sort((x,y)=>x-y);if(s[n-1]!==s[n-2]&&s[0]!==s[1])break}while(true);
+  const mx=v.indexOf(Math.max(...v)),mn=v.indexOf(Math.min(...v)),tot=v.reduce((x,y)=>x+y,0);
+  const a=ri(0,n-1);let b;do{b=shuffle([...Array(n).keys()]).slice(0,2)}while(v[b[0]]===v[b[1]]);if(v[b[0]]<v[b[1]])b.reverse();
+  const W=580,H=280,x0=58,x1=W-10,y0=230,y1=20,bw=(x1-x0)/n,ys=(y0-y1)/C.max;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" xmlns="http://www.w3.org/2000/svg" ${SVGF}>`;
+  for(let t=0;t<=C.max;t+=C.unit){const y=y0-t*ys;s+=`<line x1="${x0}" y1="${y.toFixed(1)}" x2="${x1}" y2="${y.toFixed(1)}" stroke="#BDBDBD" stroke-width="${t%C.lab===0?1:.6}" ${t%C.lab===0?'':'stroke-dasharray="3 3"'}/>`;
+    if(t%C.lab===0)s+=`<text x="${x0-8}" y="${(y+5).toFixed(1)}" text-anchor="end" font-size="14" fill="${INK}">${t}</text>`}
+  v.forEach((val,i)=>{const x=x0+i*bw+bw*.22,w=bw*.56;s+=`<rect x="${x.toFixed(1)}" y="${(y0-val*ys).toFixed(1)}" width="${w.toFixed(1)}" height="${(val*ys).toFixed(1)}" fill="#7A7A7A" stroke="${INK}" stroke-width="1.2"/>`;
+    s+=`<text x="${(x0+i*bw+bw/2).toFixed(1)}" y="${y0+22}" direction="rtl" text-anchor="middle" font-size="15" font-weight="700" fill="${INK}">${C.cats[i]}</text>`});
+  s+=`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}" stroke="${INK}" stroke-width="2"/><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1-6}" stroke="${INK}" stroke-width="2"/>`;
+  s+=`<text x="10" y="${(y0+y1)/2}" direction="rtl" text-anchor="middle" font-size="13" fill="${INK}" transform="rotate(-90 14 ${(y0+y1)/2})">${C.y}</text></svg>`;
+  return {q:`<p>הדיאגרמה מציגה את <b>${C.title}</b>. היעזרו בה וענו על השאלות.</p><div class="fig" style="overflow-x:auto">${s}</div>${subs(C.qs(C.cats,v,a,b).map(t=>`${t} ${BL}`),true)}`,
+    a:ansList(C.as(C.cats,v,a,b,mx,mn,tot))};
+}
+
+const GROUPS=['חשבון וארבע פעולות','שברים ובעיות מילוליות','גאומטריה','דיאגרמות'];
+const TOPICS=[
+ {id:'mult',g:0,label:'כפל במאונך',gen:gMult},
+ {id:'distrib',g:0,label:'חוק הפילוג',gen:gDistrib},
+ {id:'div',g:0,label:'חילוק במספרים טבעיים',gen:gDiv},
+ {id:'addsub',g:0,label:'חיבור וחיסור עד מיליון',gen:gAddSub},
+ {id:'order',g:0,label:'סדר פעולות חשבון',gen:gOrder},
+ {id:'numline',g:0,label:'ישר המספרים',gen:gNumLine},
+ {id:'divis',g:0,label:'סימני התחלקות',gen:gDivis},
+ {id:'fracline',g:1,label:'שברים על ישר המספרים',gen:gFracLine},
+ {id:'fracvis',g:1,label:'זיהוי שבר מציור',gen:gFracVis},
+ {id:'fracops',g:1,label:'חיבור וחיסור שברים',gen:gFracOps},
+ {id:'word',g:1,label:'בעיות מילוליות',gen:gWord},
+ {id:'lines',g:2,label:'מקבילות, מאונכות, סמוכות',gen:gLines},
+ {id:'tri',g:2,label:'סוגי משולשים',gen:gTri},
+ {id:'quad',g:2,label:'תכונות ריבוע ומלבן',gen:gQuad},
+ {id:'area',g:2,label:'שטח והיקף',gen:gArea},
+ {id:'chart',g:3,label:'עבודה עם דיאגרמות',gen:gChart},
+];
+const PART=['א׳','ב׳','ג׳','ד׳'];
+
+/* ---------- build a test from settings ---------- */
+function buildTest(cfg){
+  seedRng(cfg.seed);
+  const chosen=TOPICS.filter(t=>cfg.topics.includes(t.id));
+  let html='',key=[],num=0,part=0;const seen=new Set(),qs=[];
+  const ws=cfg.mode==='ws';
+  html+=`<div class="sh-head"><div><h2>${esc(cfg.title||'מבחן במתמטיקה')}</h2><div class="sub">כיתה ה׳${cfg.date?` · תאריך: ${L(esc(cfg.date))}`:''}</div></div>
+   <div class="sh-fields"><span>שם: <i></i></span><span>כיתה: <i></i></span>${ws?'':'<span>ציון: <i></i></span>'}</div></div>
+   <p class="instr">${ws?'דף עבודה לחזרה ולתרגול לקראת המבחן. פתרו לבד, ובסוף בדקו בדף הפתרונות.':'קראו כל שאלה בעיון. כתבו את דרך הפתרון במקום המיועד. בהצלחה!'}</p>`;
+  GROUPS.forEach((g,gi)=>{const ts=chosen.filter(t=>t.g===gi);if(!ts.length)return;
+    html+=`<div class="part">חלק ${PART[part++]} – ${g}</div>`;
+    ts.forEach(t=>{const off=ri(0,11);for(let i=0;i<cfg.qpt;i++){let r=t.gen(i+off),tries=0;while(seen.has(r.q)&&tries++<12)r=t.gen(i+off);seen.add(r.q);qs.push(r.q);num++;
+      html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${t.label}</div>${r.q}</div></div>`;key.push(r.a)}})});
+  html+=`<div class="foot">בהצלחה! ❤</div>`;
+  if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
+  return {html,num,qs};
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- UI state ---------- */
+const $=id=>document.getElementById(id);
+const state={mode:'test',qpt:1,topics:TOPICS.map(t=>t.id),key:true,seed:0,title:'מבחן במתמטיקה',date:'2.11',currentId:null,saved:false};
+const IN_CLAUDE=!!(window.claude&&window.claude.use);
+let archive=[],db=null,downloads=null,mode='local',dbReady=false;
+
+function renderTopics(){
+  $('topics').innerHTML=GROUPS.map((g,gi)=>`<div class="tg"><div class="tg-h"><span>${g}</span><button type="button" data-g="${gi}">הכל / כלום</button></div>${TOPICS.filter(t=>t.g===gi).map(t=>`<label class="chk"><input type="checkbox" id="t_${t.id}" value="${t.id}" ${state.topics.includes(t.id)?'checked':''}> ${t.label}</label>`).join('')}</div>`).join('');
+}
+function readSettings(){
+  state.title=$('title').value.trim();state.date=$('date').value.trim();state.key=$('keyChk').checked;
+  state.topics=[...document.querySelectorAll('#topics input:checked')].map(x=>x.value);
+}
+function applySettings(c){
+  state.mode=c.mode;state.qpt=c.qpt;state.topics=c.topics.slice();state.key=c.key;state.title=c.title;state.date=c.date;state.seed=c.seed;
+  $('title').value=c.title;$('date').value=c.date;$('keyChk').checked=c.key;syncSegs();renderTopics();
+}
+function syncSegs(){
+  $('modeTest').setAttribute('aria-pressed',state.mode==='test');$('modeWs').setAttribute('aria-pressed',state.mode==='ws');
+  document.querySelectorAll('#qptSeg button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===state.qpt));
+}
+function cfgNow(){return {seed:state.seed,mode:state.mode,qpt:state.qpt,topics:state.topics.slice(),key:state.key,title:state.title,date:state.date}}
+/* wrap non-Hebrew words inside Hebrew sentences (numbers, ✓) in their own spans, so the PDF keeps the spaces around them */
+function isolateNums(root){
+  const HEB=/[\u0590-\u05FF]/,w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
+  while(w.nextNode()){const n=w.currentNode;if(!HEB.test(n.data)||n.parentElement.closest('.ltr,svg,style'))continue;nodes.push(n)}
+  nodes.forEach(n=>{const parts=n.data.split(/(\s+)/);if(!parts.some(t=>t.trim()&&!HEB.test(t)))return;
+    const f=document.createDocumentFragment();let buf='';
+    parts.forEach(t=>{if(t.trim()&&!HEB.test(t)&&/[0-9✓✗]/.test(t)){if(buf)f.append(buf);buf='';const sp=document.createElement('span');sp.textContent=t;f.append(sp)}else buf+=t});
+    if(buf)f.append(buf);n.replaceWith(f)});
+}
+function render(){
+  const r=buildTest(cfgNow());$('sheet').innerHTML=r.html;isolateNums($('sheet'));
+  const cur=archive.find(a=>a.id===state.currentId);
+  $('pvTag').innerHTML=state.saved&&cur?`מוצג: <b>${esc(cur.title||'מבחן')}</b> · ${r.num} שאלות · שמור בארכיון`:`תצוגה מקדימה · ${r.num} שאלות · <b>עדיין לא נשמר</b> – לחצו „ג׳נרט מבחן”`;
+  fit();renderArchive();
+}
+function fit(){const sc=$('scaler'),sh=$('sheet'),k=Math.min(1,sc.clientWidth/760);sh.style.transform=`scale(${k})`;sc.style.height=(sh.offsetHeight*k)+'px'}
+new ResizeObserver(fit).observe($('scaler'));
+function status(t,cls){const s=$('status');s.textContent=t;s.className='status'+(cls?' '+cls:'')}
+function settingsChanged(){readSettings();state.saved=false;state.currentId=null;render()}
+
+/* ---------- archive ----------
+   shared: the page's database (people who can edit the page)
+   local:  this browser (everyone else, and any copy hosted outside claude.ai) */
+const LKEY='math5-archive-v1';let localOk=true,memArchive=null;
+const STARTER={id:'prep-worksheet',seed:5512026,mode:'ws',qpt:2,topics:TOPICS.map(t=>t.id),key:true,title:'דף עבודה – הכנה למבחן',date:'2.11',createdAt:1793220000000};
+function localLoad(){if(memArchive)return memArchive;try{const v=localStorage.getItem(LKEY);if(v===null)return [STARTER];return JSON.parse(v)}catch(e){localOk=false;return memArchive=[STARTER]}}
+function localSave(arr){try{localStorage.setItem(LKEY,JSON.stringify(arr));localOk=true}catch(e){localOk=false;memArchive=arr}}
+const sortArch=a=>a.slice().sort((x,y)=>y.createdAt-x.createdAt);
+function useLocal(){mode='local';archive=sortArch(localLoad())}
+async function archiveAdd(rec){
+  if(mode==='shared'){
+    try{const ref=db.collection('archive').doc();await ref.set(rec);const r=Object.assign({id:ref.id},rec);if(!archive.find(x=>x.id===ref.id))archive.unshift(r);return r}
+    catch(err){if(err&&err.code==='quota_exceeded')throw err;useLocal()}
+  }
+  const r=Object.assign({id:'t'+Date.now().toString(36)+Math.floor(Math.random()*1e4)},rec);
+  archive=sortArch([r,...archive]);localSave(archive);return r;
+}
+async function archiveDel(id){
+  if(mode==='shared'){await db.collection('archive').doc(id).delete();return}
+  archive=archive.filter(a=>a.id!==id);localSave(archive);
+}
+const fmtDate=ms=>{const d=new Date(ms);return d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'2-digit'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})};
+function renderArchive(){
+  const el=$('arch');
+  $('archNote').textContent=!dbReady?'':mode==='shared'?'הארכיון משותף לכל מי שיכול לערוך את הדף.':localOk?'הארכיון נשמר בדפדפן הזה, במכשיר הזה.':'הדפדפן לא מאפשר שמירה, ולכן הארכיון יישמר רק עד שתסגרו את הדף.';
+  if(!dbReady){el.innerHTML='<div class="arch-empty">טוען את הארכיון…</div>';return}
+  if(!archive.length){el.innerHTML='<div class="arch-empty">עדיין אין מבחנים בארכיון. כל לחיצה על „ג׳נרט מבחן” שומרת כאן מבחן חדש.</div>';return}
+  el.innerHTML=archive.map((a,i)=>`<div class="ai${a.id===state.currentId?' cur':''}"><div class="t">${esc(a.title||'מבחן')} <span style="font-weight:400;color:var(--muted)">#${archive.length-i}</span></div>
+    <div class="m">${fmtDate(a.createdAt)} · ${a.mode==='ws'?'דף עבודה':'מבחן'} · ${a.topics.length} נושאים</div>
+    <div class="acts"><button type="button" data-open="${a.id}">פתח</button><button type="button" data-pdf="${a.id}">PDF</button><button type="button" class="del" data-del="${a.id}">מחק</button></div></div>`).join('');
+}
+$('arch').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const id=b.dataset.open||b.dataset.pdf||b.dataset.del;const a=archive.find(x=>x.id===id);if(!a)return;
+  if(b.dataset.del){
+    if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='בטוח?';setTimeout(()=>{if(b.isConnected){b.classList.remove('arm');b.textContent='מחק'}},3000);return}
+    try{await archiveDel(id);status('המבחן נמחק מהארכיון','ok');if(state.currentId===id){state.currentId=null;state.saved=false}render()}
+    catch(err){status('אין הרשאה למחוק מהארכיון המשותף.','err')}
+    return}
+  applySettings(a);state.currentId=a.id;state.saved=true;render();
+  if(b.dataset.pdf)downloadPdf();
+});
+
+/* ---------- actions ---------- */
+$('genBtn').addEventListener('click',async()=>{
+  readSettings();
+  if(!state.topics.length){status('בחרו לפחות נושא אחד','err');return}
+  state.seed=freshSeed();state.saved=false;state.currentId=null;
+  const rec=Object.assign(cfgNow(),{createdAt:Date.now()});
+  $('genBtn').disabled=true;
+  try{const r=await archiveAdd(rec);state.currentId=r.id;state.saved=true;status('מבחן חדש נוצר ונשמר בארכיון','ok')}
+  catch(err){status('הארכיון המשותף מלא. מחקו מבחנים ישנים ונסו שוב.','err')}
+  $('genBtn').disabled=false;
+  render();
+});
+/* new test must not repeat any exact question from archived tests */
+function freshSeed(){
+  const old=new Set();archive.forEach(a=>{try{buildTest(a).qs.forEach(q=>old.add(q))}catch(e){}});
+  let best=null,bestDup=1e9;
+  for(let t=0;t<40;t++){const seed=Math.floor(Math.random()*2**31);const qs=buildTest(Object.assign(cfgNow(),{seed})).qs;
+    const dup=qs.filter(q=>old.has(q)).length;if(dup<bestDup){best=seed;bestDup=dup}if(!dup)break}
+  return best;
+}
+/* insert spacers so no question crosses an A4 page edge; the answer key starts on a new page */
+function paginate(sh,sp){
+  const pageH=sh.getBoundingClientRect().width*275/192;
+  const blocks=[...sh.querySelectorAll('.sh-head,.instr,.part,.q,.foot,.key h3,.key li')];
+  blocks.forEach((el,i)=>{
+    const top0=sh.getBoundingClientRect().top,r=el.getBoundingClientRect();let top=r.top-top0,bot=r.bottom-top0;
+    if(el.classList.contains('part')&&blocks[i+1])bot=blocks[i+1].getBoundingClientRect().bottom-top0;
+    const pos=top%pageH;let gap=0;
+    if(el.matches('.key h3')){gap=pos>1?pageH-pos:0}
+    else if(bot-top<pageH&&Math.floor(top/pageH)!==Math.floor((bot-1)/pageH))gap=pageH-pos;
+    if(gap>0){const d=document.createElement('div');d.style.height=gap+'px';if(el.matches('.key h3')){el.closest('.key').before(d)}else el.before(d);sp.push(d)}
+  });
+}
+/* PDF only: one span per word, so the capture places each word where the browser laid it out */
+function splitWords(root){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
+  while(w.nextNode()){const n=w.currentNode;if(!n.data.trim()||n.parentElement.closest('svg,style'))continue;nodes.push(n)}
+  nodes.forEach(n=>{const parts=n.data.split(/(\s+)/);if(parts.filter(t=>t.trim()).length<2&&parts.length<2)return;
+    const f=document.createDocumentFragment();parts.forEach(t=>{if(!t)return;if(!t.trim())f.append(t);else{const sp=document.createElement('span');sp.textContent=t;f.append(sp)}});n.replaceWith(f)});
+}
+async function downloadPdf(){
+  const btn=$('pdfBtn');btn.disabled=true;status('מכין קובץ PDF…');
+  try{
+    if(!downloads&&IN_CLAUDE){status('בתצוגה הזו אי אפשר להוריד קבצים. היכנסו ל-claude.ai או פתחו את גרסת האתר העצמאית.','err');return}
+    const sh=$('sheet'),prev=sh.style.cssText;
+    const P=CanvasRenderingContext2D.prototype,orig=P.fillText,HEB=/[\u0590-\u05FF]/;
+    /* html2canvas draws each word left-to-right from its box's left edge; draw Hebrew words right-to-left from the right edge instead */
+    P.fillText=function(t,x,y,...r){if(typeof t==='string'&&HEB.test(t)){const lead=(t.match(/^\s+/)||[''])[0],core=t.trim();
+      const right=x+this.measureText(t).width-this.measureText(lead).width;this.save();this.direction='rtl';this.textAlign='right';orig.call(this,core,right,y,...r);this.restore();return}
+      return orig.call(this,t,x,y,...r)};
+    const sp=[];let blob,sx=0,sy=0;
+    try{
+      sh.style.transform='none';sh.style.width='192mm';sh.style.padding='0';sh.style.boxShadow='none';
+      if(!sh.closest('.ltr'))splitWords(sh);paginate(sh,sp);sx=window.scrollX;sy=window.scrollY;window.scrollTo(0,0);
+      blob=await html2pdf().set({margin:[10,9,12,9],image:{type:'jpeg',quality:.95},html2canvas:{scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:'legacy'}}).from(sh).outputPdf('blob')
+    }finally{P.fillText=orig;sp.forEach(e=>e.remove());sh.style.cssText=prev;render();window.scrollTo(sx,sy)}
+    const name=`${(state.title||'מבחן').replace(/[\\/:*?"<>|]/g,'')} כיתה ה.pdf`;
+    if(!downloads){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);status('הקובץ ירד. פתחו אותו כדי להדפיס.','ok');return}
+    try{await downloads.save({filename:name,data:blob});status('הקובץ ירד. פתחו אותו כדי להדפיס.','ok')}
+    catch(err){status(err&&err.code==='declined'?'ההורדה בוטלה':'לא הצלחנו להוריד את הקובץ. נסו שוב.','err')}
+  }catch(err){status('יצירת ה-PDF נכשלה. נסו שוב.','err')}
+  finally{btn.disabled=false}
+}
+$('pdfBtn').addEventListener('click',downloadPdf);
+if(!IN_CLAUDE){$('printBtn').hidden=false;$('printBtn').addEventListener('click',()=>window.print())}
+$('modeTest').addEventListener('click',()=>{state.mode='test';if($('title').value==='דף עבודה – הכנה למבחן')$('title').value='מבחן במתמטיקה';syncSegs();settingsChanged()});
+$('modeWs').addEventListener('click',()=>{state.mode='ws';if($('title').value==='מבחן במתמטיקה')$('title').value='דף עבודה – הכנה למבחן';syncSegs();settingsChanged()});
+$('qptSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.qpt=+b.dataset.v;syncSegs();settingsChanged()});
+$('topics').addEventListener('change',settingsChanged);
+$('topics').addEventListener('click',e=>{const b=e.target.closest('button[data-g]');if(!b)return;const g=+b.dataset.g;
+  const ids=TOPICS.filter(t=>t.g===g).map(t=>t.id);const all=ids.every(id=>$('t_'+id).checked);ids.forEach(id=>$('t_'+id).checked=!all);settingsChanged()});
+['title','date'].forEach(id=>$(id).addEventListener('input',()=>{readSettings();render()}));
+$('keyChk').addEventListener('change',()=>{readSettings();render()});
+
+/* ---------- boot ---------- */
+renderTopics();state.seed=20261102;render();
+window.__math5={buildTest,applySettings,render,state,TOPICS};
+(async()=>{
+  if(IN_CLAUDE){
+    try{downloads=await window.claude.use('downloads')}catch(e){downloads=null}
+    try{db=await window.claude.use('db')}catch(e){db=null}
+    let canWrite=null;try{const u=await window.claude.use('user');canWrite=u?u.can('data.write'):null}catch(e){}
+    if(db&&canWrite!==false)mode='shared';
+  }
+  if(mode==='local'){useLocal();dbReady=true;
+    if(archive.length&&archive[0].id!=='prep-worksheet'){applySettings(archive[0]);state.currentId=archive[0].id;state.saved=true}
+    render();return}
+  let first=true;
+  db.collection('archive').orderBy('createdAt','desc').limit(200).onSnapshot(snap=>{
+    if(mode!=='shared')return;
+    archive=snap.docs.map(d=>Object.assign({id:d.id},d.data()));dbReady=true;
+    if(first){first=false;if(archive.length&&!state.currentId&&archive[0].id!=='prep-worksheet'){applySettings(archive[0]);state.currentId=archive[0].id;state.saved=true}}
+    if(state.saved&&!archive.find(a=>a.id===state.currentId)){state.saved=false;state.currentId=null}
+    render();
+  },()=>{useLocal();dbReady=true;render()});
+})();
+</script>
+
+</body>
+</html>
