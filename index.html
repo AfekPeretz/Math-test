@@ -168,6 +168,7 @@ table.t td.l{text-align:right}
 
 
 <div class="app" dir="rtl">
+  <nav class="tabs" id="genTabs" aria-label="ניווט" hidden><a href="#" data-tab="gen" aria-current="page">📝 מחולל מבחנים</a><a href="#play" data-tab="play">🎮 בואו נשחק</a></nav>
   <header class="top">
     <div>
       <h1>מחולל מבחנים במתמטיקה</h1>
@@ -547,7 +548,7 @@ function buildTest(cfg){
   const cids=cfg.topics.filter(id=>id.startsWith('c_'));
   if(cids.length){html+=`<div class="part">חלק ${PART[part++]||''} – נושאים נוספים</div>`;
     cids.forEach(id=>{const label=(cfg.customLabels&&cfg.customLabels[id])||customLabel(id);const list=cfg.customQs&&cfg.customQs[id];
-      if(!list){html+=`<div class="q ph"><div class="n">•</div><div class="b"><div class="tag">${esc(label)}</div><p>השאלות בנושא הזה ייכתבו כשתלחצו „ג׳נרט מבחן”.</p></div></div>`;return}
+      if(!list){html+=`<div class="q ph"><div class="n">•</div><div class="b"><div class="tag">${esc(label)}</div><p>השאלות בנושא הזה ייכתבו כשתלחצו „${genLabel(cfg.mode)}”.</p></div></div>`;return}
       list.forEach(x=>{num++;html+=`<div class="q"><div class="n">${num}</div><div class="b"><div class="tag">${esc(label)}</div>${customQHtml(x.q)}${figSvg(x.fig)}${ws&&typeof x.h==='string'?hintHtml(x.h):''}<div class="work"></div><p>תשובה: ${BL}${BL}</p></div></div>`;key.push(esc(x.a));keyT.push(esc(label))})})}
   html+=`<div class="foot">בהצלחה! ❤</div>`;
   if(cfg.key&&num)html+=`<div class="key"><h3>פתרונות – ${esc(cfg.title||'')}</h3><ol>${key.map((a,i)=>`${ws&&keyT[i]!==keyT[i-1]?`<li class="kt">${keyT[i]}</li>`:''}<li><b>${i+1}.</b><div>${a}</div></li>`).join('')}</ol></div>`;
@@ -617,7 +618,9 @@ function applySettings(c){
   state.mode=c.mode;state.qpt=c.qpt;state.topics=c.topics.slice();state.key=c.key;state.title=c.title;state.date=c.date;state.seed=c.seed;state.customQs=c.customQs||null;state.customLabels=c.customLabels||null;
   $('title').value=c.title;$('date').value=c.date;$('keyChk').checked=c.key;syncSegs();renderTopics();
 }
+const genLabel=m=>(m||state.mode)==='ws'?'ג׳נרט דף עבודה':'ג׳נרט מבחן';
 function syncSegs(){
+  $('genBtn').textContent=genLabel();
   $('modeTest').setAttribute('aria-pressed',state.mode==='test');$('modeWs').setAttribute('aria-pressed',state.mode==='ws');
   document.querySelectorAll('#qptSeg button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===state.qpt));
 }
@@ -634,7 +637,7 @@ function isolateNums(root){
 function render(){
   const r=buildTest(cfgNow());$('sheet').innerHTML=r.html;isolateNums($('sheet'));
   const cur=archive.find(a=>a.id===state.currentId);
-  $('pvTag').innerHTML=state.saved&&cur?`מוצג: <b>${esc(cur.title||'מבחן')}</b> · ${r.num} שאלות · שמור בארכיון`:`תצוגה מקדימה · ${r.num} שאלות · <b>עדיין לא נשמר</b> – לחצו „ג׳נרט מבחן”`;
+  $('pvTag').innerHTML=state.saved&&cur?`מוצג: <b>${esc(cur.title||'מבחן')}</b> · ${r.num} שאלות · שמור בארכיון`:`תצוגה מקדימה · ${r.num} שאלות · <b>עדיין לא נשמר</b> – לחצו „${genLabel()}”`;
   fit();renderArchive();
 }
 function fit(){const sc=$('scaler'),sh=$('sheet'),k=Math.min(1,sc.clientWidth/760);sh.style.transform=`scale(${k})`;sc.style.height=(sh.offsetHeight*k)+'px'}
@@ -668,7 +671,7 @@ function renderArchive(){
   const el=$('arch');
   $('archNote').textContent=!dbReady?'':mode==='shared'?'הארכיון משותף לכל מי שיכול לערוך את הדף.':localOk?'הארכיון נשמר בדפדפן הזה, במכשיר הזה.':'הדפדפן לא מאפשר שמירה, ולכן הארכיון יישמר רק עד שתסגרו את הדף.';
   if(!dbReady){el.innerHTML='<div class="arch-empty">טוען את הארכיון…</div>';return}
-  if(!archive.length){el.innerHTML='<div class="arch-empty">עדיין אין מבחנים בארכיון. כל לחיצה על „ג׳נרט מבחן” שומרת כאן מבחן חדש.</div>';return}
+  if(!archive.length){el.innerHTML='<div class="arch-empty">עדיין אין מבחנים בארכיון. כל לחיצה על כפתור הג׳נרט שומרת כאן מבחן או דף עבודה חדש.</div>';return}
   el.innerHTML=archive.map((a,i)=>`<div class="ai${a.id===state.currentId?' cur':''}"><div class="t">${esc(a.title||'מבחן')} <span style="font-weight:400;color:var(--muted)">#${archive.length-i}</span></div>
     <div class="m">${fmtDate(a.createdAt)} · ${a.mode==='ws'?'דף עבודה':'מבחן'} · ${a.topics.length} נושאים</div>
     <div class="acts"><button type="button" data-open="${a.id}">פתח</button><button type="button" data-pdf="${a.id}">PDF</button><button type="button" class="del" data-del="${a.id}">מחק</button></div></div>`).join('');
@@ -701,7 +704,7 @@ $('genBtn').addEventListener('click',async()=>{
   state.seed=freshSeed();state.saved=false;state.currentId=null;
   const rec=Object.assign(cfgNow(),{createdAt:Date.now()});
   try{const r=await archiveAdd(rec);state.currentId=r.id;state.saved=true;
-    status(short?`המבחן נשמר בארכיון. ${short} שאלות AI נפסלו בבדיקה ולא נכנסו.`:'מבחן חדש נוצר ונשמר בארכיון','ok')}
+    const what=state.mode==='ws'?'דף העבודה':'המבחן';status(short?`${what} נשמר בארכיון. ${short} שאלות AI נפסלו בבדיקה ולא נכנסו.`:(state.mode==='ws'?'דף עבודה חדש נוצר ונשמר בארכיון':'מבחן חדש נוצר ונשמר בארכיון'),'ok')}
   catch(err){status('הארכיון המשותף מלא. מחקו מבחנים ישנים ונסו שוב.','err')}
   $('genBtn').disabled=false;
   render();
@@ -809,7 +812,7 @@ $('addOut').addEventListener('click',async e=>{if(e.target.id!=='addConfirm')ret
   e.target.disabled=true;
   for(const [i,t] of pickd.entries()){const rec={id:'c_'+Date.now().toString(36)+i,label:t.label,desc:t.desc,createdAt:Date.now()+i};await topicAdd(rec);state.topics.push(rec.id)}
   $('addOut').innerHTML='';$('addText').value='';$('addImg').value='';$('addImgName').textContent='📷 הוספת תמונה';found=[];
-  renderTopics();settingsChanged();status(`נוספו ${pickd.length} נושאים והם כבר מסומנים. לחצו „ג׳נרט מבחן”.`,'ok');
+  renderTopics();settingsChanged();status(`נוספו ${pickd.length} נושאים והם כבר מסומנים. לחצו „${genLabel()}”.`,'ok');
 });
 
 /* new test must not repeat any exact question from archived tests */
@@ -905,6 +908,366 @@ window.__math5={buildTest,applySettings,render,state,TOPICS};
     render();
   },()=>{useLocal();dbReady=true;render()});
 })();
+</script>
+
+<style>
+/* ===== Game ("בואו נשחק"): same ink/navy/red-pen palette, bigger and rounder for kids ===== */
+:root{--g-ok:#2F8F5B;--g-ok-soft:#E1F3E8;--g-bad:#C8412B;--g-bad-soft:#F9E2DD;--g-gold:#E0A100;--g-gold-soft:#FFF3D1}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g-ok:#6CC495;--g-ok-soft:#183427;--g-bad:#F0715A;--g-bad-soft:#3A221D;--g-gold:#FFC83D;--g-gold-soft:#3A3014}}
+:root[data-theme="dark"]{--g-ok:#6CC495;--g-ok-soft:#183427;--g-bad:#F0715A;--g-bad-soft:#3A221D;--g-gold:#FFC83D;--g-gold-soft:#3A3014}
+.tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:5px;max-width:420px}
+.tabs a{flex:1;text-align:center;font-weight:800;font-size:15px;padding:9px 8px;border-radius:9px;color:var(--muted);text-decoration:none}
+.tabs a[aria-current="page"]{background:var(--navy);color:var(--panel)}
+.game{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 48px;display:flex;flex-direction:column;gap:14px}
+.g-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.g-title{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,6vw,34px);color:var(--navy);margin:0;line-height:1.15}
+.g-sub{color:var(--muted);margin:0}
+.g-btn{font:inherit;font-weight:800;font-size:17px;border:0;border-radius:14px;padding:14px 16px;cursor:pointer;background:var(--accent);color:var(--accent-ink);box-shadow:0 3px 0 rgba(0,0,0,.18);touch-action:manipulation}
+.g-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.g-btn.alt{background:var(--navy);color:var(--panel)}
+.g-btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.g-btn:disabled{opacity:.55;cursor:wait}
+.g-row{display:flex;gap:10px;flex-wrap:wrap}
+.g-row>*{flex:1}
+.g-field{display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:14px;color:var(--muted)}
+.g-field input{font:inherit;font-size:18px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.g-field input.pin{letter-spacing:.5em;text-align:center;font-variant-numeric:tabular-nums;direction:ltr}
+.g-seg{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.g-seg button{flex:1;font:inherit;font-weight:800;padding:10px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.g-seg button[aria-pressed="true"]{background:var(--navy-soft);color:var(--navy)}
+.avatars{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.avatars button{font-size:28px;line-height:1;padding:8px 0;border-radius:12px;border:2px solid transparent;background:var(--bg);cursor:pointer}
+.avatars button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.g-err{color:var(--g-bad);font-weight:700;font-size:14px;min-height:1.2em;margin:0}
+.me{display:flex;align-items:center;gap:12px}
+.me .av{font-size:40px;line-height:1;width:58px;height:58px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);border-radius:50%}
+.me .nm{font-family:var(--f-display);font-size:24px;line-height:1.1}
+.me .gr{font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.stat span{font-size:12px;color:var(--muted);font-weight:700}
+.g-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.g-nav button{font:inherit;font-weight:800;font-size:13px;padding:10px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.g-nav button span{font-size:20px}
+.g-nav button[aria-pressed="true"]{border-color:var(--navy);color:var(--navy);background:var(--navy-soft)}
+.badge-dot{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:11px;line-height:18px;padding:0 4px}
+.map-g h3{margin:6px 0 2px;font-size:14px;color:var(--navy);font-weight:800}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
+.tile{font:inherit;text-align:right;border:1.5px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;color:var(--ink);min-width:0}
+.tile:hover{border-color:var(--navy)}
+.tile b{font-size:14px;line-height:1.25}
+.stars{font-size:15px;letter-spacing:1px;color:var(--line)}
+.stars i{font-style:normal}
+.stars i.on{color:var(--g-gold)}
+.tile.mix{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tile.mix .stars i{color:rgba(255,255,255,.45)}.tile.mix .stars i.on{color:#FFE27A}
+/* play */
+.p-top{display:flex;align-items:center;gap:10px}
+.p-x{font:inherit;font-size:22px;border:0;background:none;color:var(--muted);cursor:pointer;padding:4px 8px}
+.p-bar{flex:1;height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.p-bar i{display:block;height:100%;background:var(--g-ok);border-radius:7px;transition:width .3s}
+.p-combo{font-weight:800;color:var(--g-gold);min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.p-clock{font-weight:800;font-variant-numeric:tabular-nums;color:var(--muted);min-width:46px;text-align:center}
+.p-q{background:#fff;color:#141414;border-radius:16px;padding:18px 16px;font-size:20px;line-height:1.5;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;border:1.5px solid var(--line)}
+.p-q .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap;font-variant-numeric:tabular-nums}
+.p-q .big{font-size:30px;font-weight:800}
+.p-q svg{max-width:100%;height:auto}
+.p-q .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 2px}
+.p-q .fr>span{padding:0 3px}.p-q .fr>span:first-child{border-bottom:2px solid currentColor}
+.p-q .mx{display:inline-flex;align-items:center;gap:2px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice{font:inherit;font-size:20px;font-weight:800;min-height:64px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;padding:8px;box-shadow:0 3px 0 var(--line);touch-action:manipulation}
+.choice .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05}
+.choice .fr>span:first-child{border-bottom:2px solid currentColor;padding:0 3px}
+.choice .mx{display:inline-flex;align-items:center;gap:2px}
+.choice .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.choice.ok{border-color:var(--g-ok);background:var(--g-ok-soft);box-shadow:0 3px 0 var(--g-ok)}
+.choice.bad{border-color:var(--g-bad);background:var(--g-bad-soft);box-shadow:0 3px 0 var(--g-bad)}
+.num-in{display:flex;gap:10px}
+.num-in input{flex:1;min-width:0;font:inherit;font-size:28px;font-weight:800;text-align:center;direction:ltr;border:2px solid var(--line);border-radius:14px;padding:10px;background:var(--panel);color:var(--ink);font-variant-numeric:tabular-nums}
+.num-in input.ok{border-color:var(--g-ok);background:var(--g-ok-soft)}.num-in input.bad{border-color:var(--g-bad);background:var(--g-bad-soft)}
+.fb{border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-weight:800}
+.fb.ok{background:var(--g-ok-soft);color:var(--g-ok)}
+.fb.bad{background:var(--g-bad-soft);color:var(--g-bad)}
+.fb .msg{flex:1}
+.fb .msg small{display:block;font-weight:700;color:var(--ink);margin-top:2px}
+/* result */
+.res{align-items:center;text-align:center}
+.res .big-stars{font-size:54px;letter-spacing:6px}
+.res .big-stars i{font-style:normal;color:var(--line);display:inline-block}
+.res .big-stars i.on{color:var(--g-gold);animation:pop .5s backwards}
+.res .big-stars i.on:nth-child(2){animation-delay:.25s}.res .big-stars i.on:nth-child(3){animation-delay:.5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.xp-gain{font-size:28px;font-weight:800;color:var(--g-ok)}
+.newb{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.bchip{display:flex;align-items:center;gap:6px;background:var(--g-gold-soft);border:1.5px solid var(--g-gold);border-radius:20px;padding:5px 12px;font-weight:800;font-size:14px}
+/* lists */
+.lb{display:flex;flex-direction:column;gap:6px}
+.lb-row{display:grid;grid-template-columns:32px 36px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg)}
+.lb-row.mine{background:var(--accent-soft);outline:1.5px solid var(--accent)}
+.lb-row .rk{font-weight:800;text-align:center;font-size:17px}
+.lb-row .av{font-size:26px;text-align:center}
+.lb-row .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-row .xp{font-weight:800;font-variant-numeric:tabular-nums}
+.mini{font:inherit;font-size:13px;font-weight:800;border-radius:10px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);padding:6px 10px;cursor:pointer}
+.mini.hot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ch-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:12px;background:var(--bg)}
+.ch-row .av{font-size:26px}
+.ch-row .t{font-weight:800}
+.ch-row .s{font-size:13px;color:var(--muted)}
+.ch-row .win{color:var(--g-ok);font-weight:800}.ch-row .lose{color:var(--g-bad);font-weight:800}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.bcell{border-radius:14px;padding:12px 10px;text-align:center;background:var(--bg);border:1.5px solid var(--line)}
+.bcell .e{font-size:34px;line-height:1.2}
+.bcell b{display:block;font-size:14px}
+.bcell span{font-size:12px;color:var(--muted)}
+.bcell.off{opacity:.45;filter:grayscale(1)}
+.bcell.on{background:var(--g-gold-soft);border-color:var(--g-gold)}
+.g-empty{color:var(--muted);text-align:center;padding:12px;border:1.5px dashed var(--line);border-radius:12px}
+.picker{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+.picker button{font:inherit;text-align:right;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700}
+.picker button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+@media (max-width:420px){.choice{font-size:18px;min-height:58px}.stats b{font-size:19px}.g-nav button{font-size:12px}}
+@media (prefers-reduced-motion:reduce){.res .big-stars i.on{animation:none}.p-bar i{transition:none}}
+</style>
+
+<section class="game" id="game" dir="rtl" hidden>
+  <nav class="tabs" aria-label="ניווט"><a href="#" data-tab="gen">📝 מחולל מבחנים</a><a href="#play" data-tab="play" aria-current="page">🎮 בואו נשחק</a></nav>
+  <div id="gview"></div>
+</section>
+<canvas id="confetti" hidden></canvas>
+
+<script>
+/* ================= Game ================= */
+const GAME_CFG={url:'',key:''}; // Supabase project URL + anon key (public by design; data protected by DB functions)
+const G={token:null,me:null,view:'home',tab:'map',round:null,board:null,chals:null,loading:false};
+const GT_KEY='math5-game-token',GC_KEY='math5-game-group';
+const gls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+const AVATARS=['🦁','🐯','🐼','🦊','🐸','🐵','🦄','🐙','🐬','🦉','🐢','🐝','🐨','🐧','🦖','🐳','🦒','🐞'];
+const BADGES={
+  first_round:['🎯','צעד ראשון','סיימת סבב ראשון'],
+  perfect:['💯','מושלם','10 מתוך 10 בסבב'],
+  speedy:['⚡','ברק','סבב כמעט מושלם בפחות מדקה'],
+  streak3:['🔥','3 ימים ברצף','שיחקת 3 ימים ברצף'],
+  streak7:['🌟','שבוע ברצף','שיחקת 7 ימים ברצף'],
+  stars3:['⭐','כוכב עולה','3 כוכבים ב-3 נושאים'],
+  fractions:['🍕','אלוף השברים','3 כוכבים בכל נושאי השברים'],
+  geometry:['📐','גאומטר','3 כוכבים בכל נושאי הגאומטריה'],
+  xp500:['🥉','500 נקודות','צברת 500 נקודות'],
+  xp2000:['🥇','2,000 נקודות','צברת 2,000 נקודות'],
+  challenger:['🤝','מתמודד','השלמת אתגר ראשון'],
+  winner:['🏅','מנצח','ניצחת באתגר'],
+  all_stars:['👑','אלוף הכיתה','3 כוכבים בכל 16 הנושאים']};
+const GERR={bad_group:'קוד הקבוצה לא נמצא. בדקו אותו עם ההורים.',nick_taken:'הכינוי הזה כבר תפוס בקבוצה. נסו כינוי אחר.',bad_nickname:'כינוי צריך להיות באורך 2 עד 16 תווים, בלי סימנים מיוחדים.',
+  bad_pin:'הקוד הסודי צריך להיות 4 ספרות.',bad_login:'הכינוי או הקוד הסודי לא נכונים.',locked:'יותר מדי ניסיונות. נסו שוב בעוד 15 דקות.',group_full:'הקבוצה מלאה.',
+  bad_token:'צריך להתחבר מחדש.',too_fast:'רגע, רגע! חכו כמה שניות לפני הסבב הבא.',already_played:'כבר שיחקת באתגר הזה.',bad_opponent:'אי אפשר לאתגר את השחקן הזה.',too_many_open:'יש לך כבר 10 אתגרים פתוחים. חכו שחברים ישחקו בהם.',
+  network:'אין חיבור לשרת. בדקו את האינטרנט ונסו שוב.',not_ready:'המשחק עוד לא מחובר לשרת.'};
+const gErr=e=>GERR[e&&e.code]||GERR.network;
+
+async function rpc(fn,args){
+  if(window.__gameMock)return window.__gameMock(fn,args);
+  if(!GAME_CFG.url)throw {code:'not_ready'};
+  let r;try{r=await fetch(GAME_CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:GAME_CFG.key,Authorization:'Bearer '+GAME_CFG.key},body:JSON.stringify(args)})}catch(e){throw {code:'network'}}
+  const t=await r.text();let d=null;try{d=JSON.parse(t)}catch(e){}
+  if(!r.ok){const m=d&&d.message||'';throw {code:(m.match(/^[a-z_]+$/)||[])[0]||'network'}}
+  if(d&&d.error)throw {code:d.error};
+  return d;
+}
+
+/* ---------- questions: short, auto-checkable, built from the same engine ---------- */
+const PQ=s=>`<div>${s}</div>`;
+function numChoices(ans,cands){const set=new Set([ans]);shuffle(cands).forEach(c=>{if(set.size<4&&Number.isInteger(c)&&c>=0&&c!==ans)set.add(c)});
+  let k=1;while(set.size<4){const c=ans+(R()<.5?-1:1)*k*ri(1,3);if(c>=0)set.add(c);k++}return shuffle([...set])}
+function mcNum(q,ans,cands){const ch=numChoices(ans,cands);return {q,type:'mc',choices:ch.map(n=>L(fmt(n))),correct:ch.indexOf(ans),show:L(fmt(ans))}}
+function mcHtml(q,right,wrongs){const all=[right];wrongs.forEach(w=>{if(all.length<4&&!all.includes(w))all.push(w)});const ch=shuffle(all);return {q,type:'mc',choices:ch,correct:ch.indexOf(right),show:right}}
+const numQ=(q,ans)=>({q,type:'num',answer:ans,show:L(fmt(ans))});
+function pairSvg(type){const W=220,H=130,cx=110,cy=62,th=ri(-30,30)*Math.PI/180;
+  const seg=(x,y,a,h)=>`<line x1="${(x-Math.cos(a)*h).toFixed(1)}" y1="${(y-Math.sin(a)*h).toFixed(1)}" x2="${(x+Math.cos(a)*h).toFixed(1)}" y2="${(y+Math.sin(a)*h).toFixed(1)}" stroke="#141414" stroke-width="3" stroke-linecap="round"/>`;
+  let s='';if(type==='par'){const n=[-Math.sin(th),Math.cos(th)],o=24;s=seg(cx+n[0]*o,cy+n[1]*o,th,80)+seg(cx-n[0]*o,cy-n[1]*o,th,80)}
+  else if(type==='perp')s=seg(cx,cy,th,62)+seg(cx+Math.cos(th)*ri(-14,14),cy+Math.sin(th)*ri(-14,14),th+Math.PI/2,50);
+  else s=seg(cx,cy,th,70)+seg(cx,cy,th+ri(35,58)*Math.PI/180,60);
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`}
+function chartMini(){const C=pick(CHARTS),n=C.cats.length,steps=C.max/C.unit;let v;
+  do{v=C.cats.map(()=>ri(1,steps)*C.unit);const s=v.slice().sort((x,y)=>x-y);if(s[n-1]!==s[n-2])break}while(true);
+  const W=440,H=230,x0=44,x1=W-8,y0=190,y1=14,bw=(x1-x0)/n,ys=(y0-y1)/C.max;let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" xmlns="http://www.w3.org/2000/svg" font-family="Assistant,Arial,sans-serif" direction="ltr">`;
+  for(let t=0;t<=C.max;t+=C.unit){const y=y0-t*ys;s+=`<line x1="${x0}" y1="${y.toFixed(1)}" x2="${x1}" y2="${y.toFixed(1)}" stroke="#C8C8C8" stroke-width="${t%C.lab===0?1:.6}" ${t%C.lab===0?'':'stroke-dasharray="3 3"'}/>`;if(t%C.lab===0)s+=`<text x="${x0-6}" y="${(y+5).toFixed(1)}" text-anchor="end" font-size="13" fill="#141414">${t}</text>`}
+  v.forEach((val,i)=>{const x=x0+i*bw+bw*.2;s+=`<rect x="${x.toFixed(1)}" y="${(y0-val*ys).toFixed(1)}" width="${(bw*.6).toFixed(1)}" height="${(val*ys).toFixed(1)}" fill="#7A7A7A" stroke="#141414"/><text x="${(x0+i*bw+bw/2).toFixed(1)}" y="${y0+20}" text-anchor="middle" direction="rtl" font-size="13" font-weight="700" fill="#141414">${C.cats[i]}</text>`});
+  return {C,v,svg:s+`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}" stroke="#141414" stroke-width="2"/></svg>`}}
+const GQ={
+  mult(i){if(i%2){const a=ri(13,49),b=ri(12,29),p=a*b,t=Math.floor(b/10),u=b%10;return mcNum(PQ(`<span class="big">${L(`${a} × ${b}`)}</span>`),p,[a*u+a*t,p+10,p-10,p+a,p-a])}
+    const a=R()<.5?ri(12,99):ri(101,499),b=ri(3,9);return numQ(PQ(`<span class="big">${L(`${a} × ${b} = ?`)}</span>`),a*b)},
+  distrib(i){const a=ri(3,9),t=ri(2,9)*10,u=ri(1,9),b=t+u;
+    if(i%2)return mcHtml(PQ(`איזה תרגיל שווה ל-<span class="big">${L(`${a} × ${b}`)}</span>?`),L(`${a} × ${t} + ${a} × ${u}`),[L(`${a} × ${t} + ${u}`),L(`${a} + ${t} × ${u}`),L(`${a} × ${t/10} + ${a} × ${u}`)]);
+    return numQ(PQ(`<span class="big">${L(`${a} × ${b} = ${a} × ${t} + ${a} × ${u} = ?`)}</span>`),a*b)},
+  div(i){if(i%2){const d=ri(4,9),q=ri(12,140),r=ri(1,d-1),n=d*q+r;const ch=numChoices(r,[...Array(d).keys()]);return {q:PQ(`מה <b>השארית</b>?<br><span class="big">${L(`${fmt(n)} : ${d}`)}</span>`),type:'mc',choices:ch.map(x=>L(String(x))),correct:ch.indexOf(r),show:L(String(r))}}
+    const d=ri(3,9),q=ri(14,320);return numQ(PQ(`<span class="big">${L(`${fmt(d*q)} : ${d} = ?`)}</span>`),q)},
+  addsub(i){if(i%2){const a=ri(300000,980000),b=ri(10000,a-5000);return numQ(PQ(`<span class="big">${L(`${fmt(a)} − ${fmt(b)} = ?`)}</span>`),a-b)}
+    const a=ri(100000,600000),b=ri(10000,999999-a);return numQ(PQ(`<span class="big">${L(`${fmt(a)} + ${fmt(b)} = ?`)}</span>`),a+b)},
+  order(i){if(i%2){const a=ri(3,20),b=ri(2,9),c=ri(2,9);return mcNum(PQ(`<span class="big">${L(`${a} + ${b} × ${c} = ?`)}</span>`),a+b*c,[(a+b)*c,a*b+c,a+b+c])}
+    const e=pick(ORDER)();return numQ(PQ(`<span class="big">${L(`${e[0]} = ?`)}</span>`),e[1])},
+  numline(){const c=pick([{s:0,st:5},{s:0,st:25},{s:ri(1,9)*100,st:10},{s:ri(1,9)*1000,st:100},{s:ri(1,9)*10000,st:1000},{s:0,st:50}]);
+    const k=pick([2,5]),idx=pick([1,3,4,6,7,8,9].filter(x=>x!==k)),ans=c.s+idx*c.st;
+    return mcNum(PQ(`איזה מספר מסומן ב-<b>א</b>?<div style="overflow-x:auto;max-width:100%">${numLineSvg(10,{0:fmt(c.s),[k]:fmt(c.s+k*c.st)},[{i:idx,t:'א'}])}</div>`),ans,[ans+c.st,ans-c.st,c.s+idx*c.st*2,c.s+idx*Math.max(1,c.st/5)])},
+  divis(){const d=pick([2,3,5,6,9,10]);let good;do{good=d*ri(Math.ceil(110/d),Math.floor(9990/d))}while(good<100);
+    const bad=[];while(bad.length<3){const x=ri(101,9989);if(x%d&&!bad.includes(x)&&x!==good)bad.push(x)}
+    return mcHtml(PQ(`איזה מספר מתחלק ב-<span class="big">${d}</span> ללא שארית?`),L(fmt(good)),bad.map(x=>L(fmt(x))))},
+  fracline(){const d=ri(3,8),k=ri(1,d-1);return mcHtml(PQ(`איזה שבר מסומן ב-<b>א</b>?<div style="overflow-x:auto;max-width:100%">${numLineSvg(d,{0:'0',[d]:'1'},[{i:k,t:'א'}],true)}</div>`),L(fr(k,d)),[L(fr(k,d+1)),L(fr(d-k,d)),L(fr(Math.min(k+1,d),d)),L(fr(k,d-1>k?d-1:d+2))].filter(x=>x!==L(fr(k,d))))},
+  fracvis(){const t=shapeSvg(pick(['pie','bar','grid']));const k=t.k,d=t.d;
+    return mcHtml(PQ(`איזה חלק מהצורה <b>צבוע</b>?<div>${t.svg}</div>`),L(fr(k,d)),[L(fr(d-k,d)),L(fr(k,d-k===k?d+1:d-k)),L(fr(k,d+1)),L(fr(Math.min(k+1,d),d))].filter(x=>x!==L(fr(k,d))))},
+  fracops(i){const d=ri(4,12);if(i%2){const a=ri(3,d-1),b=ri(1,a-1);return mcHtml(PQ(`<span class="big">${L(`${fr(a,d)} − ${fr(b,d)} = ?`)}</span>`),L(frVal(a-b,d)),[L(fr(a-b,0===0?d*2:d)),L(fr(a-b+1,d)),L(frVal(a+b,d))].filter(x=>x!==L(frVal(a-b,d))))}
+    const a=ri(1,d-2),b=ri(1,d-a-1);return mcHtml(PQ(`<span class="big">${L(`${fr(a,d)} + ${fr(b,d)} = ?`)}</span>`),L(frVal(a+b,d)),[L(fr(a+b,d+d)),L(fr(a+b+1,d)),L(fr(Math.abs(a-b)||1,d))].filter(x=>x!==L(frVal(a+b,d))))},
+  word(){const nm=pick(NAMES);const T=[
+    ()=>{const r=ri(4,12),c=ri(6,15);return [`בגינה יש ${r} שורות של עצים, ובכל שורה ${c} עצים. כמה עצים יש בגינה?`,r*c]},
+    ()=>{const k=pick([4,5,6,8]),n=ri(5,12)*k+ri(1,k-1);return [`${n} ילדים נוסעים בסירות. בכל סירה ${k} מקומות. כמה סירות צריך לפחות?`,Math.ceil(n/k)]},
+    ()=>{const p=ri(6,19),n=ri(3,6),t=p*n;return [`${nm} קנה ${n} ספרים ב-${p} ₪ כל אחד ושילם ב-${t<100?100:200} ₪. כמה עודף קיבל?`,(t<100?100:200)-t]},
+    ()=>{const k=pick([6,8,12]),n=ri(80,400);return [`במאפייה ${n} עוגיות. אורזים בקופסאות של ${k}. כמה קופסאות <b>מלאות</b> יהיו?`,Math.floor(n/k)]},
+    ()=>{const a=ri(1200,9000),b=ri(300,a-200);return [`בספרייה היו ${fmt(a)} ספרים. השאילו ${fmt(b)} ספרים. כמה ספרים נשארו?`,a-b]}];
+    const r=pick(T)();return numQ(PQ(r[0]),r[1])},
+  lines(){const t=pick(['par','perp','inter']),nm={par:'מקבילים',perp:'מאונכים',inter:'נחתכים'};const opts=['par','perp','inter'];
+    return {q:PQ(`איך הישרים האלה?<div>${pairSvg(t)}</div>`),type:'mc',choices:opts.map(o=>nm[o]),correct:opts.indexOf(t),show:nm[t]}},
+  tri(i){if(i%2){const opts=['acute','right','obtuse'],nm={acute:'חד־זווית',right:'ישר־זווית',obtuse:'קהה־זווית'};const t=pick(opts);let A;
+      if(t==='right'){const x=ri(20,70);A=[90,x,90-x]}else if(t==='obtuse'){const o=ri(95,140),x=ri(10,180-o-10);A=[o,x,180-o-x]}else{const a=ri(50,85),b=ri(Math.max(91-a,35),Math.min(88,179-a));A=[a,b,180-a-b]}
+      return numQ(PQ(`במשולש יש זווית של ${L(A[0]+'°')} וזווית של ${L(A[1]+'°')}.<br>כמה מעלות הזווית השלישית?`),A[2])}
+    const opts=['eq','iso','sc'],nm={eq:'שווה צלעות',iso:'שווה שוקיים',sc:'שונה צלעות'},t=pick(opts);let S;
+    if(t==='eq'){const a=ri(3,12);S=[a,a,a]}else if(t==='iso'){const a=ri(5,12);let b;do{b=ri(2,2*a-1)}while(b===a);S=shuffle([a,a,b])}else{let a,b,c;do{a=ri(3,9);b=ri(a+1,12);c=ri(b+1,a+b-1)}while(c<=b);S=shuffle([a,b,c])}
+    return {q:PQ(`אורכי הצלעות של משולש: <span class="big">${L(S.join(' , '))}</span><br>איזה משולש זה?`),type:'mc',choices:opts.map(o=>nm[o]),correct:opts.indexOf(t),show:nm[t]}},
+  quad(){const st=pick(QUAD);return {q:PQ(`<b>${st[0]}</b>`),type:'mc',choices:['נכון','לא נכון'],correct:st[1]?0:1,show:st[1]?'נכון':'לא נכון'}},
+  area(i){let w=ri(3,12),h=ri(2,9);if(w===h)w++;const svg=rectSvg(w,h,`${w} ס״מ`,`${h} ס״מ`);
+    return i%2?numQ(PQ(`מה <b>ההיקף</b> של המלבן (בס״מ)?<div>${svg}</div>`),2*(w+h)):numQ(PQ(`מה <b>השטח</b> של המלבן (בסמ״ר)?<div>${svg}</div>`),w*h)},
+  chart(i){const m=chartMini(),k=ri(0,m.v.length-1);
+    if(i%2){const mx=m.v.indexOf(Math.max(...m.v));const ch=shuffle([...m.C.cats.keys()]).slice(0,4);if(!ch.includes(mx))ch[0]=mx;const s=shuffle(ch);return {q:PQ(`${m.C.title}: למי הערך <b>הגבוה ביותר</b>?<div style="overflow-x:auto;max-width:100%">${m.svg}</div>`),type:'mc',choices:s.map(x=>m.C.cats[x]),correct:s.indexOf(mx),show:m.C.cats[mx]}}
+    return numQ(PQ(`${m.C.title}: מה הערך של <b>${m.C.cats[k]}</b>?<div style="overflow-x:auto;max-width:100%">${m.svg}</div>`),m.v[k])}
+};
+const GAME_TOPICS=TOPICS.map(t=>({id:t.id,label:t.label,g:t.g}));
+function makeRound(topic,seed){seedRng(seed);const qs=[];const ids=GAME_TOPICS.map(t=>t.id);const seen=new Set();
+  for(let i=0;i<10;i++){let q,tries=0;do{const id=topic==='mix'?pick(ids):topic;q=GQ[id](i+tries);q.topic=id;tries++}while(seen.has(q.q)&&tries<10);seen.add(q.q);qs.push(q)}
+  seedRng(Date.now()%2147483647);return qs}
+
+/* ---------- views ---------- */
+const gv=()=>document.getElementById('gview');
+const starHtml=n=>`<span class="stars">${[1,2,3].map(k=>`<i class="${k<=n?'on':''}">★</i>`).join('')}</span>`;
+function gRender(){const v=gv();if(!v)return;
+  if(!GAME_CFG.url&&!window.__gameMock){v.innerHTML=`<div class="g-card"><h1 class="g-title">בואו נשחק 🎮</h1><p class="g-sub">המשחק עוד לא מחובר לשרת. ברגע שיחובר, כאן אפשר יהיה להירשם, לצבור כוכבים ונקודות ולהתחרות בחברים.</p></div>`;return}
+  if(!G.token)return gAuth();
+  if(G.view==='play')return gPlay();
+  if(G.view==='result')return gResult();
+  return gHome();
+}
+let authMode='join',authAv=AVATARS[0];
+function gAuth(){const code=gls.get(GC_KEY)||'';
+  gv().innerHTML=`<div class="g-card"><h1 class="g-title">בואו נשחק 🎮</h1><p class="g-sub">פותרים תרגילים, אוספים כוכבים ותגים, ומתחרים בחברים מהכיתה.</p>
+  <div class="g-seg" role="group"><button type="button" data-am="join" aria-pressed="${authMode==='join'}">הצטרפות</button><button type="button" data-am="login" aria-pressed="${authMode==='login'}">כבר נרשמתי</button></div>
+  <label class="g-field">קוד הקבוצה<input id="g_code" type="text" autocomplete="off" autocapitalize="characters" value="${esc(code)}" placeholder="מקבלים מההורים"></label>
+  <label class="g-field">כינוי<input id="g_nick" type="text" maxlength="16" autocomplete="off" placeholder="איך יקראו לך במשחק"></label>
+  ${authMode==='join'?`<div class="g-field">דמות<div class="avatars" id="g_avs">${AVATARS.map(a=>`<button type="button" aria-pressed="${a===authAv}" data-av="${a}">${a}</button>`).join('')}</div></div>`:''}
+  <label class="g-field">קוד סודי (4 ספרות)<input id="g_pin" class="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></label>
+  ${authMode==='join'?`<label class="g-field">שוב את הקוד הסודי<input id="g_pin2" class="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></label>
+  <p class="g-sub" style="font-size:13px">לא כותבים שם מלא או פרטים אישיים. את הקוד הסודי שומרים בסוד, הוא לא נשלח לאף אחד.</p>`:''}
+  <p class="g-err" id="g_err"></p>
+  <button class="g-btn" id="g_go" type="button">${authMode==='join'?'יאללה, מתחילים!':'כניסה'}</button></div>`;
+}
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-am],[data-av],#g_go,[data-topic],[data-gtab],#g_out,[data-ch],[data-chplay],#g_chsend,[data-pick],#p_quit,.choice,#p_check,#p_next,#r_again,#r_home');if(!t||!t.closest('#game'))return;
+  if(t.dataset.am){authMode=t.dataset.am;return gAuth()}
+  if(t.dataset.av){authAv=t.dataset.av;document.querySelectorAll('#g_avs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.av===authAv));return}
+  if(t.id==='g_go')return gDoAuth(t);
+  if(t.dataset.topic)return gStart(t.dataset.topic,null);
+  if(t.dataset.gtab){G.tab=t.dataset.gtab;return gHome()}
+  if(t.id==='g_out'){try{await rpc('game_logout',{p_token:G.token})}catch(_){}G.token=null;G.me=null;gls.set(GT_KEY,null);return gRender()}
+  if(t.dataset.ch){G.chTarget=t.dataset.ch;G.chTopic=null;G.tab='newch';return gHome()}
+  if(t.dataset.pick){G.chTopic=t.dataset.pick;document.querySelectorAll('.picker button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pick===G.chTopic));document.getElementById('g_chsend').disabled=false;return}
+  if(t.id==='g_chsend')return gSendChallenge(t);
+  if(t.dataset.chplay){const c=(G.chals||[]).find(x=>x.id===t.dataset.chplay);if(c)return gStart(c.topic,c);return}
+  if(t.id==='p_quit'){G.round=null;G.view='home';return gRender()}
+  if(t.classList.contains('choice'))return gAnswer(+t.dataset.i);
+  if(t.id==='p_check')return gAnswer(null);
+  if(t.id==='p_next')return gNext();
+  if(t.id==='r_again'){const r=G.last;return gStart(r.topic,null)}
+  if(t.id==='r_home'){G.view='home';G.tab=G.last&&G.last.ch?'chal':'map';return gRender()}
+});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||!document.getElementById('game')||document.getElementById('game').hidden)return;
+  if(document.getElementById('p_next')){e.preventDefault();gNext()}else if(document.getElementById('p_check')&&document.activeElement&&document.activeElement.id==='p_in'){e.preventDefault();gAnswer(null)}
+  else if(document.activeElement&&['g_code','g_nick','g_pin','g_pin2'].includes(document.activeElement.id)){e.preventDefault();gDoAuth(document.getElementById('g_go'))}});
+async function gDoAuth(btn){const code=document.getElementById('g_code').value.trim(),nick=document.getElementById('g_nick').value.trim(),pin=document.getElementById('g_pin').value.trim(),err=document.getElementById('g_err');
+  if(!code||!nick||!pin){err.textContent='צריך למלא קוד קבוצה, כינוי וקוד סודי.';return}
+  if(!/^\d{4}$/.test(pin)){err.textContent=GERR.bad_pin;return}
+  if(authMode==='join'&&document.getElementById('g_pin2').value.trim()!==pin){err.textContent='שני הקודים הסודיים לא זהים.';return}
+  btn.disabled=true;err.textContent='';
+  try{const r=authMode==='join'?await rpc('game_register',{p_code:code,p_nickname:nick,p_avatar:authAv,p_pin:pin}):await rpc('game_login',{p_code:code,p_nickname:nick,p_pin:pin});
+    G.token=r.token;gls.set(GT_KEY,r.token);gls.set(GC_KEY,code.toUpperCase());await gLoadMe();G.view='home';G.tab='map';gRender()}
+  catch(e){err.textContent=gErr(e);btn.disabled=false}}
+async function gLoadMe(){try{G.me=await rpc('game_me',{p_token:G.token})}catch(e){if(e.code==='bad_token'){G.token=null;gls.set(GT_KEY,null)}throw e}}
+function gHome(){const m=G.me||{progress:{},badges:[]};const pr=m.progress||{};
+  const openCh=(G.chals||[]).filter(c=>c.status==='open'&&c.my_score==null).length;
+  let body='';
+  if(G.tab==='map'){body=`<div class="tiles"><button class="tile mix" type="button" data-topic="mix"><b>🎲 ערבוב חזרה למבחן</b>${starHtml(pr.mix||0)}</button></div>`+GROUPS.map((g,gi)=>`<div class="map-g"><h3>${g}</h3><div class="tiles">${GAME_TOPICS.filter(t=>t.g===gi).map(t=>`<button class="tile" type="button" data-topic="${t.id}"><b>${t.label}</b>${starHtml(pr[t.id]||0)}</button>`).join('')}</div></div>`).join('')}
+  else if(G.tab==='board'){body=G.board?`<p class="g-sub" style="font-size:13px">נקודות השבוע. הטבלה מתאפסת בכל יום ראשון.</p><div class="lb">${G.board.map((p,i)=>`<div class="lb-row${p.me?' mine':''}"><span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="av">${esc(p.avatar)}</span><span class="nm">${esc(p.nickname)}${p.me?' (את/ה)':''}</span><span class="xp">${fmt(p.week_xp)}</span>${p.me?'<span></span>':`<button class="mini" type="button" data-ch="${p.id}">⚔️ אתגר</button>`}</div>`).join('')}</div>`:'<div class="g-empty">טוען…</div>'}
+  else if(G.tab==='chal'){const L2=G.chals;body=!L2?'<div class="g-empty">טוען…</div>':!L2.length?'<div class="g-empty">אין עדיין אתגרים. אפשר לאתגר חבר מטבלת השבוע ⚔️</div>':`<div class="lb">${L2.map(c=>{const tl=(GAME_TOPICS.find(t=>t.id===c.topic)||{label:'ערבוב'}).label;
+      let s,a='';if(c.my_score==null){s=c.mine?'עוד לא שיחקת':'מחכה לך!';a=`<button class="mini hot" type="button" data-chplay="${c.id}">שחק</button>`}
+      else if(c.status==='done'){const w=c.my_score>c.their_score||(c.my_score===c.their_score&&c.my_ms<c.their_ms),tie=c.my_score===c.their_score&&c.my_ms===c.their_ms;s=`${c.my_score} מול ${c.their_score} · <span class="${tie?'':w?'win':'lose'}">${tie?'תיקו':w?'ניצחת! 🏆':'הפסדת הפעם'}</span>`}
+      else s=`קיבלת ${c.my_score}/10 · מחכים ל${esc(c.opponent)}`;
+      return `<div class="ch-row"><span class="av">${esc(c.opponent_avatar)}</span><div><div class="t">${esc(c.opponent)} · ${tl}</div><div class="s">${s}</div></div>${a}</div>`}).join('')}</div>`}
+  else if(G.tab==='badges'){const have=new Set(m.badges||[]);body=`<div class="bgrid">${Object.entries(BADGES).map(([k,b])=>`<div class="bcell ${have.has(k)?'on':'off'}"><div class="e">${b[0]}</div><b>${b[1]}</b><span>${b[2]}</span></div>`).join('')}</div>`}
+  else if(G.tab==='newch'){const op=(G.board||[]).find(p=>p.id===G.chTarget);body=`<p><b>אתגר את ${op?esc(op.avatar+' '+op.nickname):''}</b>: שניכם מקבלים את אותן 10 שאלות. מי שעונה נכון על יותר מנצח, ובתיקו – המהיר יותר.</p><div class="picker">${[{id:'mix',label:'🎲 ערבוב'}].concat(GAME_TOPICS).map(t=>`<button type="button" data-pick="${t.id}" aria-pressed="false">${t.label}</button>`).join('')}</div><p class="g-err" id="ch_err"></p><div class="g-row"><button class="g-btn ghost" type="button" data-gtab="board">ביטול</button><button class="g-btn" type="button" id="g_chsend" disabled>שלח אתגר ושחק</button></div>`}
+  gv().innerHTML=`<div class="g-card"><div class="me"><div class="av">${esc(m.avatar||'🙂')}</div><div style="flex:1;min-width:0"><div class="nm">${esc(m.nickname||'')}</div><div class="gr">${esc(m.group||'')}</div></div><button class="mini" type="button" id="g_out">יציאה</button></div>
+    <div class="stats"><div class="stat"><b>${fmt(m.week_xp||0)}</b><span>נקודות השבוע</span></div><div class="stat"><b>${m.streak||0} 🔥</b><span>ימים ברצף</span></div><div class="stat"><b>${(m.badges||[]).length}</b><span>תגים</span></div></div></div>
+    <div class="g-nav" role="group"><button type="button" data-gtab="map" aria-pressed="${G.tab==='map'}"><span>🗺️</span>שלבים</button><button type="button" data-gtab="board" aria-pressed="${G.tab==='board'||G.tab==='newch'}"><span>🏆</span>טבלה</button><button type="button" data-gtab="chal" aria-pressed="${G.tab==='chal'}"><span>⚔️</span>אתגרים${openCh?` <i class="badge-dot">${openCh}</i>`:''}</button><button type="button" data-gtab="badges" aria-pressed="${G.tab==='badges'}"><span>🎖️</span>תגים</button></div>
+    <div class="g-card">${body}</div>`;
+  if(G.tab==='board'&&!G.boardLoading){G.boardLoading=true;rpc('game_leaderboard',{p_token:G.token}).then(b=>{G.board=b;G.boardLoading=false;if(G.view==='home'&&G.tab==='board')gHome()}).catch(()=>{G.boardLoading=false})}
+  if((G.tab==='chal'||G.chals==null)&&!G.chLoading){G.chLoading=true;rpc('game_challenges',{p_token:G.token}).then(c=>{const changed=JSON.stringify(c)!==JSON.stringify(G.chals);G.chals=c;G.chLoading=false;if(changed&&G.view==='home')gHome()}).catch(()=>{G.chLoading=false})}
+}
+async function gSendChallenge(btn){btn.disabled=true;try{const c=await rpc('game_challenge_create',{p_token:G.token,p_to:G.chTarget,p_topic:G.chTopic});G.chals=null;gStart(c.topic,{id:c.id,seed:c.seed,topic:c.topic})}catch(e){document.getElementById('ch_err').textContent=gErr(e);btn.disabled=false}}
+function gStart(topic,ch){const seed=ch?ch.seed:Math.floor(Math.random()*2147483646)+1;
+  G.round={topic,ch,qs:makeRound(topic,seed),i:0,correct:0,combo:0,best:0,t0:Date.now(),answered:false};G.view='play';gRender();
+  clearInterval(G.clock);if(ch)G.clock=setInterval(()=>{const el=document.getElementById('p_clock');if(el&&G.round)el.textContent=fmtMs(Date.now()-G.round.t0);else clearInterval(G.clock)},500)}
+const fmtMs=ms=>{const s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function gPlay(){const r=G.round,q=r.qs[r.i];
+  gv().innerHTML=`<div class="g-card"><div class="p-top"><button class="p-x" type="button" id="p_quit" aria-label="יציאה מהסבב">✕</button><div class="p-bar"><i style="width:${r.i*10}%"></i></div>${r.ch?`<span class="p-clock" id="p_clock">${fmtMs(Date.now()-r.t0)}</span>`:''}<span class="p-combo">${r.combo>=2?'🔥'+r.combo:''}</span></div>
+  <div class="p-q">${q.q}</div>
+  ${q.type==='mc'?`<div class="choices">${q.choices.map((c,i)=>`<button class="choice" type="button" data-i="${i}">${c}</button>`).join('')}</div>`
+   :`<div class="num-in"><input id="p_in" type="text" inputmode="numeric" autocomplete="off" placeholder="?" aria-label="התשובה"><button class="g-btn alt" type="button" id="p_check">בדיקה</button></div>`}
+  <div id="p_fb"></div></div>`;
+  const inp=document.getElementById('p_in');if(inp)setTimeout(()=>inp.focus(),30);
+}
+function gAnswer(i){const r=G.round;if(!r||r.answered)return;const q=r.qs[r.i];let ok;
+  if(q.type==='mc'){ok=i===q.correct;document.querySelectorAll('.choice').forEach((b,k)=>{b.disabled=true;if(k===q.correct)b.classList.add('ok');else if(k===i)b.classList.add('bad')})}
+  else{const inp=document.getElementById('p_in');const v=inp.value.replace(/[,\s]/g,'');if(!v)return inp.focus();ok=Number(v)===q.answer;inp.classList.add(ok?'ok':'bad');inp.readOnly=true;document.getElementById('p_check').remove()}
+  r.answered=true;if(ok){r.correct++;r.combo++;r.best=Math.max(r.best,r.combo)}else r.combo=0;
+  const praise=['מעולה!','כל הכבוד!','בדיוק!','אלוף!','יפה מאוד!'];
+  document.getElementById('p_fb').innerHTML=`<div class="fb ${ok?'ok':'bad'}"><div class="msg">${ok?pick(praise)+(r.combo>=3?` ${r.combo} ברצף 🔥`:''):'לא נורא!'}${ok?'':`<small>התשובה הנכונה: ${q.show}</small>`}</div><button class="g-btn ${ok?'alt':''}" type="button" id="p_next">${r.i===9?'סיום':'המשך'}</button></div>`;
+  document.querySelector('.p-combo').textContent=r.combo>=2?'🔥'+r.combo:'';document.querySelector('.p-bar i').style.width=((r.i+1)*10)+'%';
+  setTimeout(()=>{const n=document.getElementById('p_next');if(n)n.focus()},30)}
+function gNext(){const r=G.round;if(!r||!r.answered)return;if(r.i<9){r.i++;r.answered=false;return gPlay()}gFinish()}
+async function gFinish(){const r=G.round;clearInterval(G.clock);const ms=Date.now()-r.t0;
+  G.last={topic:r.topic,ch:r.ch,correct:r.correct,ms,res:null,err:null};G.view='result';G.round=null;gRender();
+  try{G.last.res=r.ch?await rpc('game_challenge_submit',{p_token:G.token,p_id:r.ch.id,p_correct:r.correct,p_total:10,p_ms:ms}):await rpc('game_submit',{p_token:G.token,p_topic:r.topic,p_correct:r.correct,p_total:10,p_ms:ms});G.chals=null}
+  catch(e){G.last.err=gErr(e)}
+  try{await gLoadMe()}catch(_){}
+  if(G.view==='result')gRender();
+  if(G.last.res&&G.last.res.stars===3)confetti()}
+function gResult(){const l=G.last,res=l.res;const st=res?res.stars:0;
+  const msg=st===3?'וואו! מושלם!':st===2?'יפה מאוד!':st===1?'כל הכבוד על המאמץ!':'ממשיכים להתאמן!';
+  gv().innerHTML=`<div class="g-card res"><div class="big-stars">${[1,2,3].map(k=>`<i class="${res&&k<=st?'on':''}">★</i>`).join('')}</div>
+  <h2 class="g-title">${res?msg:l.err?'הסבב לא נשמר':'שומר…'}</h2>
+  <p style="font-size:20px;margin:0"><b>${l.correct}</b> מתוך 10 נכונות${l.ch?` · ${fmtMs(l.ms)}`:''}</p>
+  ${res?`<div class="xp-gain">+${res.xp} נקודות</div>`:''}
+  ${l.err?`<p class="g-err">${l.err}</p>`:''}
+  ${l.ch&&res?`<p class="g-sub">${res.status==='done'?'האתגר הסתיים! התוצאה מחכה בלשונית האתגרים ⚔️':'שלחנו את האתגר. כשהחבר ישחק, תראו מי ניצח.'}</p>`:''}
+  ${res&&res.new_badges&&res.new_badges.length?`<div><b>תג חדש!</b><div class="newb" style="margin-top:6px">${res.new_badges.filter(b=>BADGES[b]).map(b=>`<span class="bchip">${BADGES[b][0]} ${BADGES[b][1]}</span>`).join('')}</div></div>`:''}
+  <div class="g-row" style="width:100%">${l.ch?'':'<button class="g-btn" type="button" id="r_again">עוד סבב</button>'}<button class="g-btn ghost" type="button" id="r_home">${l.ch?'לאתגרים':'למפת השלבים'}</button></div></div>`}
+function confetti(){if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;const c=document.getElementById('confetti');c.hidden=false;c.width=innerWidth;c.height=innerHeight;const x=c.getContext('2d');
+  const cols=['#C8412B','#1F4060','#E0A100','#2F8F5B','#8DB4DA'];const ps=Array.from({length:120},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.4,vx:(Math.random()-.5)*3,vy:2+Math.random()*3,r:Math.random()*6.28,s:5+Math.random()*6,c:cols[Math.floor(Math.random()*5)]}));let f=0;
+  (function tick(){x.clearRect(0,0,c.width,c.height);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=.1;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});if(++f<160)requestAnimationFrame(tick);else{c.hidden=true}})()}
+
+/* ---------- routing between the generator and the game ---------- */
+function route(){const play=location.hash==='#play';document.querySelector('.app').hidden=play;document.getElementById('game').hidden=!play;
+  document.querySelectorAll('.tabs a').forEach(a=>a.setAttribute('aria-current',(a.dataset.tab==='play')===play?'page':'false'));
+  if(play){if(!G.started){G.started=true;G.token=gls.get(GT_KEY);if(G.token){gv().innerHTML='<div class="g-card"><div class="g-empty">טוען…</div></div>';gLoadMe().then(gRender).catch(()=>gRender())}else gRender()}}
+  else fit();window.scrollTo(0,0)}
+if(!IN_CLAUDE&&GAME_CFG.url){document.getElementById('genTabs').hidden=false;addEventListener('hashchange',route);route()}
+document.querySelectorAll('.tabs a[data-tab="gen"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();history.pushState(null,'',location.pathname+location.search);route()}));
 </script>
 
 </body>
